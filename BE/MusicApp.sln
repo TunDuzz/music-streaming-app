@@ -3,13 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MusicApp.Domain", "MusicApp.Domain\MusicApp.Domain.csproj", "{1B016F1B-81CD-4FA8-9EFA-1485F919D62F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MusicApp.Domain", "src\MusicApp.Domain\MusicApp.Domain.csproj", "{1B016F1B-81CD-4FA8-9EFA-1485F919D62F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MusicApp.Application", "MusicApp.Application\MusicApp.Application.csproj", "{C66150E2-FEEC-4163-A3A2-C1EF5F835B28}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MusicApp.Application", "src\MusicApp.Application\MusicApp.Application.csproj", "{C66150E2-FEEC-4163-A3A2-C1EF5F835B28}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MusicApp.Infrastructure", "MusicApp.Infrastructure\MusicApp.Infrastructure.csproj", "{AD669C0A-C901-4762-A7E1-9E940F97010C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MusicApp.Infrastructure", "src\MusicApp.Infrastructure\MusicApp.Infrastructure.csproj", "{AD669C0A-C901-4762-A7E1-9E940F97010C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MusicApp.API", "MusicApp.API\MusicApp.API.csproj", "{AD347FB1-B75F-46DD-865F-238F2A346E0F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MusicApp.API", "src\MusicApp.API\MusicApp.API.csproj", "{AD347FB1-B75F-46DD-865F-238F2A346E0F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
