@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+﻿import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { PlayerProvider } from './contexts/PlayerContext';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import Library from './pages/Library';
@@ -7,15 +8,17 @@ import './App.css';
 
 function App() {
   return (
-    <Router>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/library" element={<Library />} />
-          <Route path="/search" element={<Search />} />
-        </Routes>
-      </Layout>
-    </Router>
+    <PlayerProvider>
+      <Router>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/library" element={<Library />} />
+            <Route path="/search" element={<Search />} />
+          </Routes>
+        </Layout>
+      </Router>
+    </PlayerProvider>
   );
 }
 

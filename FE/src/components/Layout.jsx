@@ -1,7 +1,8 @@
-import React from 'react';
+﻿import React from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import Player from './Player';
+import './Layout.css';
 
 const Layout = ({ children }) => {
     return (
