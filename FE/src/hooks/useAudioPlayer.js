@@ -1,99 +1,26 @@
-﻿import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { usePlayer } from '../contexts/PlayerContext';
+import { formatDuration } from '../lib/api';
 
-export const useAudioPlayer = () => {
-  const audioRef = useRef(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [currentSong, setCurrentSong] = useState(null);
-  const [volume, setVolume] = useState(1);
+const useAudioPlayer = () => {
+    const player = usePlayer();
+    const [progress, setProgress] = useState(0);
 
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
+    useEffect(() => {
+        // Update progress bar
+        if (player.duration > 0) {
+            setProgress((player.currentTime / player.duration) * 100);
+        } else {
+            setProgress(0);
+        }
+    }, [player.currentTime, player.duration]);
 
-    const updateTime = () => setCurrentTime(audio.currentTime);
-    const updateDuration = () => setDuration(audio.duration);
-    const handleEnded = () => {
-      setIsPlaying(false);
-      setCurrentTime(0);
+    return {
+        ...player,
+        progress,
+        formattedTime: formatDuration(player.currentTime),
+        formattedDuration: formatDuration(player.duration),
     };
-
-    audio.addEventListener('timeupdate', updateTime);
-    audio.addEventListener('loadedmetadata', updateDuration);
-    audio.addEventListener('ended', handleEnded);
-
-    return () => {
-      audio.removeEventListener('timeupdate', updateTime);
-      audio.removeEventListener('loadedmetadata', updateDuration);
-      audio.removeEventListener('ended', handleEnded);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume;
-    }
-  }, [volume]);
-
-  const play = () => {
-    if (audioRef.current) {
-      audioRef.current.play().catch((error) => {
-        console.error('Error playing audio:', error);
-      });
-      setIsPlaying(true);
-    }
-  };
-
-  const pause = () => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      setIsPlaying(false);
-    }
-  };
-
-  const togglePlayPause = () => {
-    if (isPlaying) {
-      pause();
-    } else {
-      play();
-    }
-  };
-
-  const seek = (time) => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = time;
-      setCurrentTime(time);
-    }
-  };
-
-  const loadSong = (song) => {
-    if (audioRef.current && song?.audioFileUrl) {
-      audioRef.current.src = song.audioFileUrl;
-      audioRef.current.load();
-      setCurrentSong(song);
-      setCurrentTime(0);
-      setIsPlaying(false);
-    }
-  };
-
-  const setVolumeLevel = (newVolume) => {
-    const clampedVolume = Math.max(0, Math.min(1, newVolume));
-    setVolume(clampedVolume);
-  };
-
-  return {
-    audioRef,
-    isPlaying,
-    currentTime,
-    duration,
-    currentSong,
-    volume,
-    play,
-    pause,
-    togglePlayPause,
-    seek,
-    loadSong,
-    setVolumeLevel,
-  };
 };
+
+export default useAudioPlayer;

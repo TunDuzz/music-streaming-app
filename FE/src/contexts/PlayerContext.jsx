@@ -1,60 +1,122 @@
-﻿import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { useAudioPlayer } from '../hooks/useAudioPlayer';
+﻿import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
 
 const PlayerContext = createContext();
 
-export const usePlayer = () => {
-  const context = useContext(PlayerContext);
-  if (!context) {
-    throw new Error('usePlayer must be used within PlayerProvider');
-  }
-  return context;
-};
+export const usePlayer = () => useContext(PlayerContext);
 
 export const PlayerProvider = ({ children }) => {
-  const audioPlayer = useAudioPlayer();
   const [currentSong, setCurrentSong] = useState(null);
-
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [queue, setQueue] = useState([]);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const audioRef = useRef(new Audio());
 
   useEffect(() => {
-    const savedSong = localStorage.getItem('currentSong');
-    if (savedSong) {
-      try {
-        const song = JSON.parse(savedSong);
-        setCurrentSong(song);
-        if (song.audioFileUrl) {
-          audioPlayer.loadSong(song);
-        }
-      } catch (error) {
-        console.error('Error loading saved song:', error);
+    const audio = audioRef.current;
+
+    const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
+    const handleLoadedMetadata = () => setDuration(audio.duration);
+    const handleEnded = () => playNext();
+
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('ended', handleEnded);
+
+    return () => {
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('ended', handleEnded);
+    };
+  }, [queue]); // Re-bind if queue changes (though logic uses state)
+
+  const playSong = (song) => {
+    if (currentSong?.id === song.id) {
+      if (isPlaying) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        audioRef.current.play();
+        setIsPlaying(true);
       }
+    } else {
+      // New song
+      setCurrentSong(song);
+      audioRef.current.src = song.audioFileUrl || song.songUrl || song.fileUrl; // Handle different property names
+      audioRef.current.play()
+        .catch(e => console.error("Playback failed:", e)); // Catch permission errors
+      setIsPlaying(true);
+
+      // Update queue if not already in recent context
+      // For simplicity, we just set it as current. Queue logic can be expanded.
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  };
 
+  const pauseSong = () => {
+    audioRef.current.pause();
+    setIsPlaying(false);
+  };
 
-  useEffect(() => {
+  const resumeSong = () => {
     if (currentSong) {
-      localStorage.setItem('currentSong', JSON.stringify(currentSong));
-      if (currentSong.audioFileUrl) {
-        audioPlayer.loadSong(currentSong);
+      audioRef.current.play();
+      setIsPlaying(true);
+    }
+  };
+
+  const playNext = () => {
+    if (queue.length > 0) {
+      const nextIndex = queue.findIndex(s => s.id === currentSong?.id) + 1;
+      if (nextIndex < queue.length) {
+        playSong(queue[nextIndex]);
       }
     }
-  }, [currentSong, audioPlayer]);
+  };
 
-  const playSong = useCallback((song) => {
-    setCurrentSong(song);
-    if (song.audioFileUrl) {
-      audioPlayer.loadSong(song);
-      setTimeout(() => {
-        audioPlayer.play();
-      }, 100);
+  const playPrevious = () => {
+    if (queue.length > 0) {
+      const prevIndex = queue.findIndex(s => s.id === currentSong?.id) - 1;
+      if (prevIndex >= 0) {
+        playSong(queue[prevIndex]);
+      }
     }
-  }, [audioPlayer]);
+  };
+
+  const addToQueue = (song) => {
+    setQueue(prev => [...prev, song]);
+  };
+
+  const setQueueList = (songs) => {
+    setQueue(songs);
+  };
+
+  const seek = (time) => {
+    audioRef.current.currentTime = time;
+    setCurrentTime(time);
+  };
+
+  const updateVolume = (val) => {
+    setVolume(val);
+    audioRef.current.volume = val;
+  };
 
   const value = {
-    ...audioPlayer,
     currentSong,
+    isPlaying,
+    queue,
+    currentTime,
+    duration,
+    volume,
     playSong,
+    pauseSong,
+    resumeSong,
+    playNext,
+    playPrevious,
+    addToQueue,
+    setQueueList,
+    seek,
+    updateVolume
   };
 
   return (

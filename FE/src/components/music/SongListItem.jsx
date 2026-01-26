@@ -1,0 +1,74 @@
+import { Play, Pause, Heart, Clock } from 'lucide-react';
+import { usePlayer } from '../../contexts/PlayerContext';
+import { cn } from '../../lib/utils';
+import { Button } from '../ui/button';
+import { formatDuration } from '../../lib/api';
+
+const SongListItem = ({ song, index }) => {
+    const { playSong, currentSong, isPlaying } = usePlayer();
+    const isCurrent = currentSong?.id === song.id;
+
+    return (
+        <div
+            className={cn(
+                "group flex items-center gap-4 p-2 rounded-md hover:bg-white/10 transition-colors cursor-pointer",
+                isCurrent && "bg-white/10"
+            )}
+            onDoubleClick={() => playSong(song)}
+        >
+            {/* Index / Play Button */}
+            <div className="w-8 flex justify-center text-gray-400">
+                <span className="group-hover:hidden text-sm font-mono">
+                    {isCurrent && isPlaying ? (
+                        <img src="/playing.gif" alt="playing" className="w-3 h-3 invert" /> // Placeholder for animated equalizer
+                    ) : (
+                        index + 1
+                    )}
+                </span>
+                <button
+                    className="hidden group-hover:block text-white"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        playSong(song);
+                    }}
+                >
+                    {isCurrent && isPlaying ? <Pause size={16} /> : <Play size={16} />}
+                </button>
+            </div>
+
+            {/* Song Info */}
+            <div className="flex-1 flex items-center gap-3">
+                <img
+                    src={song.coverUrl || song.imageUrl || 'https://placehold.co/40'}
+                    alt={song.title}
+                    className="w-10 h-10 object-cover rounded bg-white/5"
+                />
+                <div className="flex flex-col">
+                    <span className={cn("text-base font-medium truncate text-white", isCurrent && "text-green-500")}>
+                        {song.title}
+                    </span>
+                    <span className="text-sm text-gray-400 group-hover:text-white transition-colors">
+                        {song.artist}
+                    </span>
+                </div>
+            </div>
+
+            {/* Album (Optional/Hidden on mobile) */}
+            <div className="hidden md:block flex-1 text-gray-400 text-sm truncate hover:text-white">
+                {song.album || "Single"}
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-4 justify-end">
+                <Button variant="ghost" size="icon" className="hidden group-hover:flex h-8 w-8 text-gray-400 hover:text-white">
+                    <Heart size={16} />
+                </Button>
+                <span className="text-sm text-gray-400 font-mono w-10 text-right">
+                    {formatDuration(song.duration)}
+                </span>
+            </div>
+        </div>
+    );
+};
+
+export default SongListItem;
