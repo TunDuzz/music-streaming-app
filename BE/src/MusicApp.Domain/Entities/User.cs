@@ -1,5 +1,7 @@
 ﻿namespace MusicApp.Domain.Entities;
 
+using MusicApp.Domain.Enums;
+
 public class User : BaseEntity
 {
     public string Username { get; set; } = string.Empty;
@@ -9,6 +11,7 @@ public class User : BaseEntity
     public string? AvatarUrl { get; set; }
     public bool IsEmailVerified { get; set; }
     public DateTime? LastLoginAt { get; set; }
+    public UserRole Role { get; set; } = UserRole.User;
 
     public ICollection<Playlist> Playlists { get; set; } = new List<Playlist>();
     public ICollection<UserFollowsArtist> FollowedArtists { get; set; } = new List<UserFollowsArtist>();

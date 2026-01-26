@@ -8,4 +8,5 @@ public class UserDto : BaseDto
     public string? AvatarUrl { get; set; }
     public bool IsEmailVerified { get; set; }
     public DateTime? LastLoginAt { get; set; }
+    public string Role { get; set; } = string.Empty;
 }

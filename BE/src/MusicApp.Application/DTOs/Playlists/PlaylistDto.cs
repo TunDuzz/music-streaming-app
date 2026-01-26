@@ -1,4 +1,6 @@
-﻿namespace MusicApp.Application.DTOs.Playlists;
+﻿using MusicApp.Application.DTOs.Songs;
+
+namespace MusicApp.Application.DTOs.Playlists;
 
 public class PlaylistDto : BaseDto
 {
@@ -9,4 +11,5 @@ public class PlaylistDto : BaseDto
     public Guid UserId { get; set; }
     public string Username { get; set; } = string.Empty;
     public int SongCount { get; set; }
+    public ICollection<SongDto> Songs { get; set; } = new List<SongDto>();
 }

@@ -88,7 +88,8 @@ public class UserService : IUserService
             IsEmailVerified = user.IsEmailVerified,
             LastLoginAt = user.LastLoginAt,
             CreatedAt = user.CreatedAt,
-            UpdatedAt = user.UpdatedAt
+            UpdatedAt = user.UpdatedAt,
+            Role = user.Role.ToString()
         };
     }
 }

@@ -13,4 +13,6 @@ public class SongDto : BaseDto
     public string ArtistName { get; set; } = string.Empty;
     public Guid? AlbumId { get; set; }
     public string? AlbumTitle { get; set; }
+    public Guid? GenreId { get; set; }
+    public string? GenreName { get; set; }
 }

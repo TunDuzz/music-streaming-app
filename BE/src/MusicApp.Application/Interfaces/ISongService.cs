@@ -10,4 +10,5 @@ public interface ISongService
     Task<SongDto> CreateAsync(CreateSongDto dto);
     Task<SongDto?> UpdateAsync(Guid id, UpdateSongDto dto);
     Task<bool> DeleteAsync(Guid id);
+    Task<IEnumerable<SongDto>> SearchAsync(string query);
 }

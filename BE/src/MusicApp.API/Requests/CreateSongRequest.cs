@@ -1,28 +1,26 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
-namespace MusicApp.Application.DTOs.Songs;
+namespace MusicApp.API.Requests;
 
-public class CreateSongDto
+public class CreateSongRequest
 {
     [Required]
     [StringLength(200)]
     public string Title { get; set; } = string.Empty;
 
     [Required]
-    [Range(1, 7200)] // Max 2 hours
+    [Range(1, 7200)]
     public int Duration { get; set; }
 
     public string? Lyrics { get; set; }
 
     [Required]
-    public string AudioFileUrl { get; set; } = string.Empty;
+    public IFormFile AudioFile { get; set; }
 
-    public string? CoverImageUrl { get; set; }
+    public IFormFile? CoverFile { get; set; }
 
     [Required]
     public Guid ArtistId { get; set; }
 
     public Guid? AlbumId { get; set; }
-
-    public Guid? GenreId { get; set; }
 }

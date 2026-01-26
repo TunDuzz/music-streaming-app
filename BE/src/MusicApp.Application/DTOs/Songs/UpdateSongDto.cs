@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace MusicApp.Application.DTOs.Songs;
 
@@ -16,5 +16,9 @@ public class UpdateSongDto
 
     public string? CoverImageUrl { get; set; }
 
+    public Guid? ArtistId { get; set; }
+
     public Guid? AlbumId { get; set; }
+    
+    public Guid? GenreId { get; set; }
 }

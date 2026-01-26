@@ -1,16 +1,16 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace MusicApp.Application.DTOs.Albums;
 
 public class UpdateAlbumDto
 {
-    [StringLength(200)]
+    [StringLength(100)]
     public string? Title { get; set; }
 
-    [StringLength(1000)]
-    public string? Description { get; set; }
-
-    public string? CoverImageUrl { get; set; }
-
     public DateTime? ReleaseDate { get; set; }
+
+    [Url]
+    public string? CoverImageUrl { get; set; }
+    
+    public Guid? ArtistId { get; set; }
 }

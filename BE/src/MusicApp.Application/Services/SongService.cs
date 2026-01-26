@@ -8,11 +8,13 @@ public class SongService : ISongService
 {
     private readonly ISongRepository _songRepository;
     private readonly IArtistRepository _artistRepository;
+    private readonly IGenreRepository _genreRepository;
 
-    public SongService(ISongRepository songRepository, IArtistRepository artistRepository)
+    public SongService(ISongRepository songRepository, IArtistRepository artistRepository, IGenreRepository genreRepository)
     {
         _songRepository = songRepository;
         _artistRepository = artistRepository;
+        _genreRepository = genreRepository;
     }
 
     public async Task<SongDto?> GetByIdAsync(Guid id)
@@ -21,7 +23,14 @@ public class SongService : ISongService
         if (song == null) return null;
 
         var artist = await _artistRepository.GetByIdAsync(song.ArtistId);
-        return MapToDto(song, artist?.Name ?? "Unknown");
+        string genreName = "Unknown";
+        if (song.GenreId.HasValue)
+        {
+             MusicApp.Domain.Entities.Genre? genre = await _genreRepository.GetByIdAsync(song.GenreId.Value);
+             genreName = genre?.Name ?? "Unknown";
+        }
+
+        return MapToDto(song, artist?.Name ?? "Unknown", genreName);
     }
 
     public async Task<IEnumerable<SongDto>> GetAllAsync()
@@ -32,7 +41,13 @@ public class SongService : ISongService
         foreach (var song in songs)
         {
             var artist = await _artistRepository.GetByIdAsync(song.ArtistId);
-            songDtos.Add(MapToDto(song, artist?.Name ?? "Unknown"));
+            string genreName = "Unknown";
+            if (song.GenreId.HasValue)
+            {
+                var genre = await _genreRepository.GetByIdAsync(song.GenreId.Value);
+                genreName = genre?.Name ?? "Unknown";
+            }
+            songDtos.Add(MapToDto(song, artist?.Name ?? "Unknown", genreName));
         }
 
         return songDtos;
@@ -42,7 +57,19 @@ public class SongService : ISongService
     {
         var songs = await _songRepository.GetByArtistIdAsync(artistId);
         var artist = await _artistRepository.GetByIdAsync(artistId);
-        return songs.Select(s => MapToDto(s, artist?.Name ?? "Unknown"));
+        
+        var songDtos = new List<SongDto>();
+        foreach (var song in songs)
+        {
+             string genreName = "Unknown";
+            if (song.GenreId.HasValue)
+            {
+                var genre = await _genreRepository.GetByIdAsync(song.GenreId.Value);
+                genreName = genre?.Name ?? "Unknown";
+            }
+             songDtos.Add(MapToDto(song, artist?.Name ?? "Unknown", genreName));
+        }
+        return songDtos;
     }
 
     public async Task<SongDto> CreateAsync(CreateSongDto dto)
@@ -57,13 +84,22 @@ public class SongService : ISongService
             CoverImageUrl = dto.CoverImageUrl,
             ArtistId = dto.ArtistId,
             AlbumId = dto.AlbumId,
+            GenreId = dto.GenreId,
             PlayCount = 0,
             LikeCount = 0
         };
 
         var created = await _songRepository.AddAsync(song);
         var artist = await _artistRepository.GetByIdAsync(created.ArtistId);
-        return MapToDto(created, artist?.Name ?? "Unknown");
+        
+        string genreName = "Unknown";
+        if (created.GenreId.HasValue)
+        {
+            var genre = await _genreRepository.GetByIdAsync(created.GenreId.Value);
+            genreName = genre?.Name ?? "Unknown";
+        }
+        
+        return MapToDto(created, artist?.Name ?? "Unknown", genreName);
     }
 
     public async Task<SongDto?> UpdateAsync(Guid id, UpdateSongDto dto)
@@ -89,9 +125,23 @@ public class SongService : ISongService
         if (dto.AlbumId.HasValue)
             song.AlbumId = dto.AlbumId;
 
+        if (dto.ArtistId.HasValue)
+            song.ArtistId = dto.ArtistId.Value;
+
+        if (dto.GenreId.HasValue)
+            song.GenreId = dto.GenreId;
+
         await _songRepository.UpdateAsync(song);
         var artist = await _artistRepository.GetByIdAsync(song.ArtistId);
-        return MapToDto(song, artist?.Name ?? "Unknown");
+        
+        string genreName = "Unknown";
+        if (song.GenreId.HasValue)
+        {
+            var genre = await _genreRepository.GetByIdAsync(song.GenreId.Value);
+            genreName = genre?.Name ?? "Unknown";
+        }
+
+        return MapToDto(song, artist?.Name ?? "Unknown", genreName);
     }
 
     public async Task<bool> DeleteAsync(Guid id)
@@ -103,7 +153,30 @@ public class SongService : ISongService
         return true;
     }
 
-    private static SongDto MapToDto(Song song, string artistName)
+    public async Task<IEnumerable<SongDto>> SearchAsync(string query)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+            return new List<SongDto>();
+
+        var songs = await _songRepository.SearchByTitleAsync(query);
+        var songDtos = new List<SongDto>();
+
+        foreach (var song in songs)
+        {
+            var artist = await _artistRepository.GetByIdAsync(song.ArtistId);
+             string genreName = "Unknown";
+            if (song.GenreId.HasValue)
+            {
+                var genre = await _genreRepository.GetByIdAsync(song.GenreId.Value);
+                genreName = genre?.Name ?? "Unknown";
+            }
+            songDtos.Add(MapToDto(song, artist?.Name ?? "Unknown", genreName));
+        }
+
+        return songDtos;
+    }
+
+    private static SongDto MapToDto(Song song, string artistName, string genreName)
     {
         return new SongDto
         {
@@ -118,6 +191,8 @@ public class SongService : ISongService
             ArtistId = song.ArtistId,
             ArtistName = artistName,
             AlbumId = song.AlbumId,
+            GenreId = song.GenreId,
+            GenreName = genreName,
             CreatedAt = song.CreatedAt,
             UpdatedAt = song.UpdatedAt
         };

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MusicApp.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using MusicApp.Infrastructure.Data;
 namespace MusicApp.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260124170632_AddAuthFeatures")]
+    partial class AddAuthFeatures
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -91,30 +94,6 @@ namespace MusicApp.Infrastructure.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Artists");
-                });
-
-            modelBuilder.Entity("MusicApp.Domain.Entities.Genre", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Genres");
                 });
 
             modelBuilder.Entity("MusicApp.Domain.Entities.Playlist", b =>
@@ -198,9 +177,6 @@ namespace MusicApp.Infrastructure.Data.Migrations
                     b.Property<int>("Duration")
                         .HasColumnType("int");
 
-                    b.Property<Guid?>("GenreId")
-                        .HasColumnType("char(36)");
-
                     b.Property<int>("LikeCount")
                         .HasColumnType("int");
 
@@ -222,8 +198,6 @@ namespace MusicApp.Infrastructure.Data.Migrations
                     b.HasIndex("AlbumId");
 
                     b.HasIndex("ArtistId");
-
-                    b.HasIndex("GenreId");
 
                     b.ToTable("Songs");
                 });
@@ -256,9 +230,6 @@ namespace MusicApp.Infrastructure.Data.Migrations
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("longtext");
-
-                    b.Property<int>("Role")
-                        .HasColumnType("int");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime(6)");
@@ -368,15 +339,9 @@ namespace MusicApp.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("MusicApp.Domain.Entities.Genre", "Genre")
-                        .WithMany("Songs")
-                        .HasForeignKey("GenreId");
-
                     b.Navigation("Album");
 
                     b.Navigation("Artist");
-
-                    b.Navigation("Genre");
                 });
 
             modelBuilder.Entity("MusicApp.Domain.Entities.UserFollowsArtist", b =>
@@ -428,11 +393,6 @@ namespace MusicApp.Infrastructure.Data.Migrations
 
                     b.Navigation("Followers");
 
-                    b.Navigation("Songs");
-                });
-
-            modelBuilder.Entity("MusicApp.Domain.Entities.Genre", b =>
-                {
                     b.Navigation("Songs");
                 });
 

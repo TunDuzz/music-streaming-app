@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using MusicApp.Application.DTOs.Artists;
 using MusicApp.Application.Interfaces;
 
@@ -33,6 +34,7 @@ public class ArtistsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<ArtistDto>> Create([FromBody] CreateArtistDto dto)
     {
         var artist = await _artistService.CreateAsync(dto);
@@ -40,6 +42,7 @@ public class ArtistsController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<ArtistDto>> Update(Guid id, [FromBody] UpdateArtistDto dto)
     {
         var artist = await _artistService.UpdateAsync(id, dto);
@@ -50,6 +53,7 @@ public class ArtistsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var result = await _artistService.DeleteAsync(id);

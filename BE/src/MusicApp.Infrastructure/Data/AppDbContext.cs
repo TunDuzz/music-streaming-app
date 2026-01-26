@@ -15,6 +15,7 @@ public class AppDbContext : DbContext
     public DbSet<Song> Songs { get; set; }
     public DbSet<Playlist> Playlists { get; set; }
     public DbSet<PlaylistSong> PlaylistSongs { get; set; }
+    public DbSet<Genre> Genres { get; set; }
     public DbSet<UserFollowsArtist> UserFollowsArtists { get; set; }
     public DbSet<UserLikesSong> UserLikesSongs { get; set; }
 
@@ -92,6 +93,12 @@ public class AppDbContext : DbContext
             .WithOne(uls => uls.Song)
             .HasForeignKey(uls => uls.SongId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Song>()
+            .HasOne(s => s.Genre)
+            .WithMany(g => g.Songs)
+            .HasForeignKey(s => s.GenreId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 
     private void ConfigurePlaylistRelationships(ModelBuilder modelBuilder)
