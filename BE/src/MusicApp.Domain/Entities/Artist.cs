@@ -5,10 +5,14 @@ public class Artist : BaseEntity
     public string Name { get; set; } = string.Empty;
     public string? Bio { get; set; }
     public string? AvatarUrl { get; set; }
+    public string? AvatarObjectKey { get; set; }
     public string? Country { get; set; }
     public int FollowerCount { get; set; }
 
     public ICollection<Album> Albums { get; set; } = new List<Album>();
     public ICollection<Song> Songs { get; set; } = new List<Song>();
     public ICollection<UserFollowsArtist> Followers { get; set; } = new List<UserFollowsArtist>();
+
+    // MinIO Object Keys for Artist Images (stored as JSON or separated by ;)
+    public string? ArtistImageObjectKeys { get; set; }
 }

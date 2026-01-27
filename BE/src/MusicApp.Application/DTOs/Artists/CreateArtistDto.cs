@@ -12,6 +12,7 @@ public class CreateArtistDto
     public string? Bio { get; set; }
 
     public string? AvatarUrl { get; set; }
+    public string? AvatarObjectKey { get; set; }
 
     [StringLength(100)]
     public string? Country { get; set; }

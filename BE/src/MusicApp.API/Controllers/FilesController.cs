@@ -17,7 +17,7 @@ public class FilesController : ControllerBase
 
     [HttpPost("upload")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Upload(IFormFile file, [FromQuery] string bucket = "music-app")
+    public async Task<IActionResult> Upload(IFormFile file, [FromQuery] string bucket = "musicdb")
     {
         if (file == null || file.Length == 0)
             return BadRequest("File is empty");

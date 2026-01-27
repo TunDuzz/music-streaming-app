@@ -16,8 +16,10 @@ public class CreateSongDto
 
     [Required]
     public string AudioFileUrl { get; set; } = string.Empty;
+    public string? AudioObjectKey { get; set; }
 
     public string? CoverImageUrl { get; set; }
+    public string? CoverObjectKey { get; set; }
 
     [Required]
     public Guid ArtistId { get; set; }

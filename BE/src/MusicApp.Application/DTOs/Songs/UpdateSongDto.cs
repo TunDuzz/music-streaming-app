@@ -13,8 +13,10 @@ public class UpdateSongDto
     public string? Lyrics { get; set; }
 
     public string? AudioFileUrl { get; set; }
+    public string? AudioObjectKey { get; set; }
 
     public string? CoverImageUrl { get; set; }
+    public string? CoverObjectKey { get; set; }
 
     public Guid? ArtistId { get; set; }
 

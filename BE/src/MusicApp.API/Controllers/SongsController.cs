@@ -54,26 +54,34 @@ public class SongsController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<SongDto>> CreateWithUpload([FromForm] MusicApp.API.Requests.CreateSongRequest request)
     {
-        string audioObjectName = "";
-        string coverObjectName = "";
-        string bucket = "music-app";
+        string audioObjectKey = "";
+        string coverObjectKey = "";
+        string bucket = "music-app"; // Requirement says MusicDB, but code uses 'music-app'. I should probably update this to 'MusicDB' to match requirement OR user input? User said "I use only 1 bucket" but didn't correct the name. I will stick to "music-app" or what is in config? 
+        // Wait, user said "Bucket: MusicDB" in the request. I should probably switch to "MusicDB" or use config. 
+        // The existing code has "music-app". I'll use "MusicDB" as per requirement.
+        bucket = "musicdb"; // MinIO requires lowercase bucket names
 
         try 
         {
+            var titleSlug = SanitizeFileName(request.Title);
+            
             // 1. Upload Audio
-            var audioExt = Path.GetExtension(request.AudioFile.FileName).ToLower();
-            audioObjectName = $"{Guid.NewGuid()}{audioExt}";
+            // Structure: songs/{SongTitleSlug}/audio/{Guid}{ext}
+            var audioParams = GetFileParams(request.AudioFile);
+            audioObjectKey = $"songs/{titleSlug}/audio/{Guid.NewGuid()}{audioParams.Extension}";
+            
             using var audioStream = request.AudioFile.OpenReadStream();
-            var audioUrl = await _fileStorageService.UploadFileAsync(audioStream, audioObjectName, request.AudioFile.ContentType, bucket);
+            var audioUrl = await _fileStorageService.UploadFileAsync(audioStream, audioObjectKey, request.AudioFile.ContentType, bucket);
 
             // 2. Upload Cover (if any)
             string? coverUrl = null;
             if (request.CoverFile != null)
             {
-                var coverExt = Path.GetExtension(request.CoverFile.FileName).ToLower();
-                coverObjectName = $"{Guid.NewGuid()}{coverExt}";
+                var coverParams = GetFileParams(request.CoverFile);
+                coverObjectKey = $"songs/{titleSlug}/cover/{Guid.NewGuid()}{coverParams.Extension}";
+                
                 using var coverStream = request.CoverFile.OpenReadStream();
-                coverUrl = await _fileStorageService.UploadFileAsync(coverStream, coverObjectName, request.CoverFile.ContentType, bucket);
+                coverUrl = await _fileStorageService.UploadFileAsync(coverStream, coverObjectKey, request.CoverFile.ContentType, bucket);
             }
 
             // 3. Create Song in DB
@@ -85,7 +93,9 @@ public class SongsController : ControllerBase
                 AlbumId = request.AlbumId,
                 Lyrics = request.Lyrics,
                 AudioFileUrl = audioUrl,
-                CoverImageUrl = coverUrl
+                AudioObjectKey = audioObjectKey,
+                CoverImageUrl = coverUrl,
+                CoverObjectKey = coverObjectKey
             };
 
             var song = await _songService.CreateAsync(dto);
@@ -95,14 +105,33 @@ public class SongsController : ControllerBase
         {
             Console.WriteLine($"[CreateWithUpload] Error: {ex.Message}. Rolling back files...");
             // Rollback
-            if (!string.IsNullOrEmpty(audioObjectName))
-                await _fileStorageService.DeleteFileAsync(bucket, audioObjectName);
+            if (!string.IsNullOrEmpty(audioObjectKey))
+                await _fileStorageService.DeleteFileAsync(bucket, audioObjectKey);
             
-            if (!string.IsNullOrEmpty(coverObjectName))
-                await _fileStorageService.DeleteFileAsync(bucket, coverObjectName);
+            if (!string.IsNullOrEmpty(coverObjectKey))
+                await _fileStorageService.DeleteFileAsync(bucket, coverObjectKey);
 
             return StatusCode(500, $"Internal Server Error: {ex.Message}");
         }
+    }
+
+    private string SanitizeFileName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "untitled";
+        
+        var invalidChars = System.IO.Path.GetInvalidFileNameChars();
+        var sanitized = new string(name
+            .Where(ch => !invalidChars.Contains(ch))
+            .ToArray());
+            
+        return sanitized.Trim().ToLower().Replace(" ", "-");
+    }
+
+    private (string FileName, string Extension) GetFileParams(IFormFile file)
+    {
+        var original = System.IO.Path.GetFileName(file.FileName);
+        var ext = System.IO.Path.GetExtension(file.FileName).ToLower();
+        return (original, ext);
     }
 
     [HttpPut("{id}")]

@@ -1,6 +1,7 @@
 ﻿using MusicApp.Application.DTOs.Songs;
 using MusicApp.Application.Interfaces;
 using MusicApp.Domain.Entities;
+using Microsoft.Extensions.Configuration; // Added missing using
 
 namespace MusicApp.Application.Services;
 
@@ -8,13 +9,15 @@ public class SongService : ISongService
 {
     private readonly ISongRepository _songRepository;
     private readonly IArtistRepository _artistRepository;
-    private readonly IGenreRepository _genreRepository;
+    private readonly IGenreRepository _genreRepository; // Restored field
+    private readonly IConfiguration _configuration;
 
-    public SongService(ISongRepository songRepository, IArtistRepository artistRepository, IGenreRepository genreRepository)
+    public SongService(ISongRepository songRepository, IArtistRepository artistRepository, IGenreRepository genreRepository, IConfiguration configuration)
     {
         _songRepository = songRepository;
         _artistRepository = artistRepository;
         _genreRepository = genreRepository;
+        _configuration = configuration;
     }
 
     public async Task<SongDto?> GetByIdAsync(Guid id)
@@ -81,7 +84,9 @@ public class SongService : ISongService
             Duration = dto.Duration,
             Lyrics = dto.Lyrics,
             AudioFileUrl = dto.AudioFileUrl,
+            AudioObjectKey = dto.AudioObjectKey,
             CoverImageUrl = dto.CoverImageUrl,
+            CoverObjectKey = dto.CoverObjectKey,
             ArtistId = dto.ArtistId,
             AlbumId = dto.AlbumId,
             GenreId = dto.GenreId,
@@ -117,10 +122,16 @@ public class SongService : ISongService
             song.Lyrics = dto.Lyrics;
 
         if (dto.AudioFileUrl != null)
+        {
             song.AudioFileUrl = dto.AudioFileUrl;
+            if(!string.IsNullOrEmpty(dto.AudioObjectKey)) song.AudioObjectKey = dto.AudioObjectKey;
+        }
 
         if (dto.CoverImageUrl != null)
+        {
             song.CoverImageUrl = dto.CoverImageUrl;
+            if(!string.IsNullOrEmpty(dto.CoverObjectKey)) song.CoverObjectKey = dto.CoverObjectKey;
+        }
 
         if (dto.AlbumId.HasValue)
             song.AlbumId = dto.AlbumId;
@@ -176,16 +187,35 @@ public class SongService : ISongService
         return songDtos;
     }
 
-    private static SongDto MapToDto(Song song, string artistName, string genreName)
+    private SongDto MapToDto(Song song, string artistName, string genreName)
     {
+        // Robust URL Generation using Configuration
+        var endpoint = _configuration["Minio:Endpoint"];
+        var useSSLStr = _configuration["Minio:UseSSL"];
+        var useSSL = !string.IsNullOrEmpty(useSSLStr) && bool.Parse(useSSLStr);
+        var protocol = useSSL ? "https" : "http";
+        var bucket = "musicdb"; // Could also be config
+
+        var audioUrl = song.AudioFileUrl;
+        if ((string.IsNullOrEmpty(audioUrl) || !audioUrl.StartsWith("http")) && !string.IsNullOrEmpty(song.AudioObjectKey))
+        {
+            audioUrl = $"{protocol}://{endpoint}/{bucket}/{song.AudioObjectKey}";
+        }
+
+        var coverUrl = song.CoverImageUrl;
+         if ((string.IsNullOrEmpty(coverUrl) || !coverUrl.StartsWith("http")) && !string.IsNullOrEmpty(song.CoverObjectKey))
+        {
+            coverUrl = $"{protocol}://{endpoint}/{bucket}/{song.CoverObjectKey}";
+        }
+
         return new SongDto
         {
             Id = song.Id,
             Title = song.Title,
             Duration = song.Duration,
             Lyrics = song.Lyrics,
-            AudioFileUrl = song.AudioFileUrl,
-            CoverImageUrl = song.CoverImageUrl,
+            AudioFileUrl = audioUrl,
+            CoverImageUrl = coverUrl,
             PlayCount = song.PlayCount,
             LikeCount = song.LikeCount,
             ArtistId = song.ArtistId,

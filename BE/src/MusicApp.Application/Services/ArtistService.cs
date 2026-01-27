@@ -1,16 +1,19 @@
 ﻿using MusicApp.Application.DTOs.Artists;
 using MusicApp.Application.Interfaces;
 using MusicApp.Domain.Entities;
+using Microsoft.Extensions.Configuration;
 
 namespace MusicApp.Application.Services;
 
 public class ArtistService : IArtistService
 {
     private readonly IArtistRepository _artistRepository;
+    private readonly IConfiguration _configuration;
 
-    public ArtistService(IArtistRepository artistRepository)
+    public ArtistService(IArtistRepository artistRepository, IConfiguration configuration)
     {
         _artistRepository = artistRepository;
+        _configuration = configuration;
     }
 
     public async Task<ArtistDto?> GetByIdAsync(Guid id)
@@ -33,6 +36,7 @@ public class ArtistService : IArtistService
             Name = dto.Name,
             Bio = dto.Bio,
             AvatarUrl = dto.AvatarUrl,
+            AvatarObjectKey = dto.AvatarObjectKey,
             Country = dto.Country,
             FollowerCount = 0
         };
@@ -53,10 +57,16 @@ public class ArtistService : IArtistService
             artist.Bio = dto.Bio;
 
         if (dto.AvatarUrl != null)
+        {
             artist.AvatarUrl = dto.AvatarUrl;
+            if(!string.IsNullOrEmpty(dto.AvatarObjectKey)) artist.AvatarObjectKey = dto.AvatarObjectKey;
+        }
 
         if (dto.Country != null)
             artist.Country = dto.Country;
+
+        if (dto.ArtistImageObjectKeys != null)
+            artist.ArtistImageObjectKeys = dto.ArtistImageObjectKeys;
 
         await _artistRepository.UpdateAsync(artist);
         return MapToDto(artist);
@@ -71,18 +81,41 @@ public class ArtistService : IArtistService
         return true;
     }
 
-    private static ArtistDto MapToDto(Artist artist)
+    private ArtistDto MapToDto(Artist artist)
     {
-        return new ArtistDto
+        var dto = new ArtistDto
         {
             Id = artist.Id,
             Name = artist.Name,
             Bio = artist.Bio,
-            AvatarUrl = artist.AvatarUrl,
+            AvatarUrl = artist.AvatarUrl, // This could be enhanced to be a full URL if AvatarUrl is just a relative path or we use ObjectKey
+            AvatarObjectKey = artist.AvatarObjectKey,
             Country = artist.Country,
             FollowerCount = artist.FollowerCount,
+            ArtistImageObjectKeys = artist.ArtistImageObjectKeys,
             CreatedAt = artist.CreatedAt,
             UpdatedAt = artist.UpdatedAt
         };
+
+        if (!string.IsNullOrEmpty(artist.ArtistImageObjectKeys))
+        {
+            try
+            {
+                var keys = System.Text.Json.JsonSerializer.Deserialize<List<string>>(artist.ArtistImageObjectKeys);
+                if (keys != null)
+                {
+                    var endpoint = _configuration["Minio:Endpoint"];
+                    var useSSLStr = _configuration["Minio:UseSSL"];
+                    var useSSL = !string.IsNullOrEmpty(useSSLStr) && bool.Parse(useSSLStr);
+                    var protocol = useSSL ? "https" : "http";
+                    var bucket = "musicdb";
+
+                    dto.ImageUrls = keys.Select(k => $"{protocol}://{endpoint}/{bucket}/{k}").ToList();
+                }
+            }
+            catch { }
+        }
+
+        return dto;
     }
 }

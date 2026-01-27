@@ -19,4 +19,8 @@ public class Song : BaseEntity
     public Genre? Genre { get; set; }
     public ICollection<PlaylistSong> PlaylistSongs { get; set; } = new List<PlaylistSong>();
     public ICollection<UserLikesSong> LikedByUsers { get; set; } = new List<UserLikesSong>();
+    
+    // MinIO Object Keys
+    public string? AudioObjectKey { get; set; }
+    public string? CoverObjectKey { get; set; }
 }
