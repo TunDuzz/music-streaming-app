@@ -16,18 +16,29 @@ import {
 // Let's create a Header that uses a simple state for dropdown or just a logout button for simplicity first.
 import { LogOut, User, Shield } from 'lucide-react';
 
+import SearchBar from '../music/SearchBar';
+
 // Let's implement a simple Header.
 const Header = () => {
     const { user, logout, isAdmin } = useAuth();
     const navigate = useNavigate();
 
     return (
-        <header className="h-16 bg-black/40 backdrop-blur-md flex items-center justify-end px-8 sticky top-0 z-10">
-            <div className="flex items-center gap-4">
+        <header className="h-16 bg-black/40 backdrop-blur-md flex items-center justify-between px-8 sticky top-0 z-50">
+            {/* Left Spacer for centering */}
+            <div className="w-1/3 min-w-[100px] flex items-center gap-2"></div>
+
+            {/* Center: Search Bar */}
+            <div className="flex-1 max-w-md flex justify-center">
+                <SearchBar />
+            </div>
+
+            {/* Right: User & Actions */}
+            <div className="w-1/3 flex items-center justify-end gap-4">
                 {isAdmin && (
                     <Button
                         variant="outline"
-                        className="gap-2 border-purple-500 text-purple-400 hover:bg-purple-500/10 hover:text-purple-300"
+                        className="gap-2 border-purple-500 text-purple-400 hover:bg-purple-500/10 hover:text-purple-300 hidden sm:flex"
                         onClick={() => navigate('/admin')}
                     >
                         <Shield size={16} />
@@ -46,8 +57,6 @@ const Header = () => {
                                 {user?.displayName?.[0] || user?.username?.[0]?.toUpperCase()}
                             </AvatarFallback>
                         </Avatar>
-
-                        {/* Simple Dropdown on Hover/Focus would be here, but let's just make the avatar log out on click or have a separate logout button for now for simplicity & robustness */}
                     </div>
 
                     <Button

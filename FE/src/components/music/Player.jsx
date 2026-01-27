@@ -1,8 +1,7 @@
 import { usePlayer } from '../../contexts/PlayerContext';
 import useAudioPlayer from '../../hooks/useAudioPlayer';
 import { Button } from '../ui/button';
-import { Slider } from '../ui/slider'; // We don't have Slider yet, let's use standard input type="range" styled or create a Slider component
-// Let's create a simple Slider using Tailwind for now to save time on creating shadcn Slider component
+import { Slider } from '../ui/slider';
 import { Play, Pause, SkipBack, SkipForward, Volume2, Volume1, VolumeX, Shuffle, Repeat } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
@@ -46,10 +45,6 @@ const Player = () => {
     };
 
     // Custom slider style
-    // Progress bar gradient style
-    const sliderStyle = {
-        background: `linear-gradient(to right, #1db954 ${progress}%, #4b5563 ${progress}%)`
-    };
 
     return (
         <div className="fixed bottom-0 left-0 right-0 w-full h-24 bg-black border-t border-white/10 px-4 flex items-center justify-between z-[100] backdrop-blur-lg bg-black/90">
@@ -104,17 +99,23 @@ const Player = () => {
 
                 <div className="w-full flex items-center gap-2 text-xs text-gray-400 font-mono">
                     <span>{formattedTime}</span>
-                    <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={progress || 0}
-                        onChange={(e) => {
-                            const time = (e.target.value / 100) * (usePlayer().duration || 1);
-                            seek(time);
+                    <Slider
+                        value={[progress || 0]}
+                        max={100}
+                        step={0.1}
+                        onValueChange={(val) => {
+                            // We need to fetch duration again or passed via props/context. 
+                            // The context is available via outer scope 'useAudioPlayer()' hook result? 
+                            // Wait, 'seek' is available, but 'currentSong.duration' is safer?
+                            // Actually context hook result was destructured at top.
+                            // But I need total duration in seconds.
+                            // 'currentSong.duration' is usually seconds.
+                            // Let's use that.
+                            if (currentSong?.duration) {
+                                seek((val[0] / 100) * currentSong.duration);
+                            }
                         }}
-                        className="flex-1 h-1 rounded-lg appearance-none cursor-pointer"
-                        style={sliderStyle}
+                        className="flex-1"
                     />
                     <span>{formattedDuration}</span>
                 </div>
@@ -122,15 +123,16 @@ const Player = () => {
 
             {/* Right: Volume */}
             <div className="flex items-center justify-end gap-2 w-[30%] min-w-[150px]">
-                <Volume2 size={20} className="text-gray-400" />
-                <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.01"
-                    value={volume}
-                    onChange={(e) => updateVolume(parseFloat(e.target.value))}
-                    className="w-24 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer accent-white hover:accent-primary"
+                {volume === 0 ? <VolumeX size={20} className="text-gray-400" /> :
+                    volume < 0.5 ? <Volume1 size={20} className="text-gray-400" /> :
+                        <Volume2 size={20} className="text-gray-400" />}
+
+                <Slider
+                    value={[volume]}
+                    max={1}
+                    step={0.01}
+                    onValueChange={(val) => updateVolume(val[0])}
+                    className="w-24"
                 />
             </div>
         </div>

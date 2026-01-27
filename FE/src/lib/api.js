@@ -126,6 +126,15 @@ export const artistsApi = {
         return handleResponseSafe(response);
     },
 
+    createWithUpload: async (formData) => {
+        const response = await fetch(`${API_BASE_URL}/Artists/with-upload`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: formData,
+        });
+        return handleResponseSafe(response);
+    },
+
     update: async (id, data) => {
         const response = await fetch(`${API_BASE_URL}/Artists/${id}`, {
             method: 'PUT',
@@ -139,6 +148,18 @@ export const artistsApi = {
         const response = await fetch(`${API_BASE_URL}/Artists/${id}`, {
             method: 'DELETE',
             headers: getHeaders(),
+        });
+        return handleResponseSafe(response);
+    },
+
+    uploadImages: async (id, files) => {
+        const formData = new FormData();
+        Array.from(files).forEach(file => formData.append('files', file));
+
+        const response = await fetch(`${API_BASE_URL}/Artists/${id}/images`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: formData
         });
         return handleResponseSafe(response);
     }
@@ -283,6 +304,15 @@ export const filesApi = {
             body: formData
         });
 
+        return handleResponseSafe(response);
+    }
+};
+
+export const searchApi = {
+    search: async (query) => {
+        const response = await fetch(`${API_BASE_URL}/Search?q=${encodeURIComponent(query)}`, {
+            headers: getHeaders(),
+        });
         return handleResponseSafe(response);
     }
 };

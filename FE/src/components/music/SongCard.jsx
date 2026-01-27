@@ -8,7 +8,7 @@ const SongCard = ({ song }) => {
     const { playSong, currentSong, isPlaying } = usePlayer();
 
     // Use coverUrl or imageUrl, default to placeholder if missing
-    const cover = song.coverUrl || song.imageUrl || 'https://placehold.co/400';
+    const cover = song.coverImageUrl || song.coverUrl || song.imageUrl || 'https://placehold.co/400';
 
     const isCurrent = currentSong?.id === song.id;
 

@@ -57,8 +57,11 @@ const ArtistManagement = () => {
         }
     };
 
+    const [avatarFile, setAvatarFile] = useState(null);
+
     const handleOpenDialog = (artist = null) => {
         setUploading(false);
+        setAvatarFile(null);
         if (artist) {
             setEditingArtist(artist);
             setFormData({
@@ -79,22 +82,14 @@ const ArtistManagement = () => {
         setIsDialogOpen(true);
     };
 
-    const handleFileUpload = async (e) => {
+    const handleFileUpload = (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        setUploading(true);
-        try {
-            const result = await filesApi.upload(file);
-            if (result && result.url) {
-                setFormData(prev => ({ ...prev, avatarUrl: result.url }));
-            }
-        } catch (error) {
-            alert('Upload failed: ' + error.message);
-        } finally {
-            setUploading(false);
-            e.target.value = '';
-        }
+        // Preview
+        setAvatarFile(file);
+        const objectUrl = URL.createObjectURL(file);
+        setFormData(prev => ({ ...prev, avatarUrl: objectUrl }));
     };
 
     const handleSubmit = async (e) => {
@@ -102,13 +97,31 @@ const ArtistManagement = () => {
 
         try {
             if (editingArtist) {
+                // Update logic... (if avatar changed, might need separate upload or update CreateWithUpload to UpdateWithUpload logic, but for now stick to simple update or new file logic if needed. 
+                // For simplicity, existing logic for update is fine, but if we want to update avatar with new structure we might need UpdateWithUpload too.
+                // Requirement only asked "Why artist part is not like song?". Standardizing creation is key.
                 const updated = await artistsApi.update(editingArtist.id, formData);
+                // If there's a new avatar file during edit, we might need to handle it. 
+                // But let's focus on Creation parity first.
                 if (updated) {
                     fetchArtists();
                     setIsDialogOpen(false);
                 }
             } else {
-                const created = await artistsApi.create(formData);
+                // Create
+                let created;
+                if (avatarFile) {
+                    const formDataObj = new FormData();
+                    formDataObj.append('Name', formData.name);
+                    formDataObj.append('Bio', formData.bio);
+                    formDataObj.append('Country', formData.country);
+                    formDataObj.append('AvatarFile', avatarFile);
+
+                    created = await artistsApi.createWithUpload(formDataObj);
+                } else {
+                    created = await artistsApi.create(formData);
+                }
+
                 if (created) {
                     fetchArtists();
                     setIsDialogOpen(false);
@@ -278,6 +291,56 @@ const ArtistManagement = () => {
                         {formData.avatarUrl && (
                             <div className="flex justify-center">
                                 <img src={formData.avatarUrl} alt="Preview" className="w-24 h-24 object-cover rounded-full border-2 border-white/10" />
+                            </div>
+                        )}
+
+                        {/* Gallery Upload - Only when Editing */}
+                        {editingArtist && (
+                            <div className="space-y-2 border-t border-white/10 pt-4 mt-4">
+                                <Label className="text-gray-300">Gallery Images</Label>
+                                <div className="grid grid-cols-4 gap-2 mb-2">
+                                    {editingArtist.imageUrls && editingArtist.imageUrls.map((url, idx) => (
+                                        <div key={idx} className="aspect-square bg-white/5 rounded overflow-hidden">
+                                            <img src={url} className="w-full h-full object-cover" />
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        multiple
+                                        className="hidden"
+                                        id="gallery-upload"
+                                        onChange={async (e) => {
+                                            if (e.target.files?.length) {
+                                                setUploading(true);
+                                                try {
+                                                    await artistsApi.uploadImages(editingArtist.id, e.target.files);
+                                                    // Refresh data
+                                                    const updated = await artistsApi.getById(editingArtist.id);
+                                                    setEditingArtist(updated);
+                                                    fetchArtists();
+                                                } catch (err) {
+                                                    alert('Gallery upload failed: ' + err.message);
+                                                } finally {
+                                                    setUploading(false);
+                                                    e.target.value = '';
+                                                }
+                                            }
+                                        }}
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="w-full border-white/10 hover:bg-white/5"
+                                        onClick={() => document.getElementById('gallery-upload').click()}
+                                        disabled={uploading}
+                                    >
+                                        {uploading ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
+                                        Upload Gallery Images
+                                    </Button>
+                                </div>
                             </div>
                         )}
 
