@@ -19,6 +19,7 @@ import Register from './pages/auth/Register';
 import Home from './pages/music/Home';
 import Search from './pages/music/Search';
 import Library from './pages/music/Library';
+import PlaylistDetail from './pages/playlist/PlaylistDetail';
 
 // Admin pages
 import Dashboard from './pages/admin/Dashboard';
@@ -47,6 +48,7 @@ function App() {
                     <Route path="/" element={<Home />} />
                     <Route path="/search" element={<Search />} />
                     <Route path="/library" element={<Library />} />
+                    <Route path="/playlist/:id" element={<PlaylistDetail />} />
                     <Route path="*" element={<Navigate to="/app" replace />} />
                   </Routes>
                 </AppLayout>

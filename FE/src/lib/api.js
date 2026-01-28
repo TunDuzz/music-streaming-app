@@ -242,19 +242,26 @@ export const authApi = {
 
 export const playlistsApi = {
     getAll: async () => {
-        const response = await fetch(`${API_BASE_URL}/Playlists`, {
+        const response = await fetch(`${API_BASE_URL}/Playlist`, { // Updated to match likely Controller Route
+            headers: getHeaders(),
+        });
+        return handleResponseSafe(response);
+    },
+    getMyPlaylists: async () => {
+        const response = await fetch(`${API_BASE_URL}/Playlist/my-playlists`, {
             headers: getHeaders(),
         });
         return handleResponseSafe(response);
     },
     getById: async (id) => {
-        const response = await fetch(`${API_BASE_URL}/Playlists/${id}`, {
+        const response = await fetch(`${API_BASE_URL}/Playlist/${id}`, {
             headers: getHeaders(),
+            cache: 'no-store'
         });
         return handleResponseSafe(response);
     },
     create: async (data) => {
-        const response = await fetch(`${API_BASE_URL}/Playlists`, {
+        const response = await fetch(`${API_BASE_URL}/Playlist`, {
             method: 'POST',
             headers: getHeaders(),
             body: JSON.stringify(data),
@@ -262,7 +269,7 @@ export const playlistsApi = {
         return handleResponseSafe(response);
     },
     update: async (id, data) => {
-        const response = await fetch(`${API_BASE_URL}/Playlists/${id}`, {
+        const response = await fetch(`${API_BASE_URL}/Playlist/${id}`, {
             method: 'PUT',
             headers: getHeaders(),
             body: JSON.stringify(data),
@@ -270,23 +277,34 @@ export const playlistsApi = {
         return handleResponseSafe(response);
     },
     delete: async (id) => {
-        const response = await fetch(`${API_BASE_URL}/Playlists/${id}`, {
+        const response = await fetch(`${API_BASE_URL}/Playlist/${id}`, {
             method: 'DELETE',
             headers: getHeaders(),
         });
         return handleResponseSafe(response);
     },
     addSong: async (playlistId, songId) => {
-        const response = await fetch(`${API_BASE_URL}/Playlists/${playlistId}/songs/${songId}`, {
+        const response = await fetch(`${API_BASE_URL}/Playlist/${playlistId}/songs/${songId}`, {
             method: 'POST',
             headers: getHeaders(),
         });
         return handleResponseSafe(response);
     },
     removeSong: async (playlistId, songId) => {
-        const response = await fetch(`${API_BASE_URL}/Playlists/${playlistId}/songs/${songId}`, {
+        const response = await fetch(`${API_BASE_URL}/Playlist/${playlistId}/songs/${songId}`, {
             method: 'DELETE',
             headers: getHeaders(),
+        });
+        return handleResponseSafe(response);
+    },
+    uploadImage: async (id, file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(`${API_BASE_URL}/Playlist/${id}/image`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: formData
         });
         return handleResponseSafe(response);
     }

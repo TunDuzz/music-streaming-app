@@ -56,17 +56,36 @@ const Search = () => {
     }, [query]);
 
     // Handle Top Result Logic
-    // Priority: Exact Artist Name Match > First Artist > First Song
+    // Handle Top Result Logic
+    // Priority: 
+    // 1. Exact/StartWith Artist Match
+    // 2. Exact/StartWith Song Match
+    // 3. First Artist name contains
+    // 4. First Song title contains
     const getTopResult = () => {
         if (!results.songs?.length && !results.artists?.length) return null;
 
-        if (results.artists?.length > 0) {
-            return { type: 'artist', data: results.artists[0] };
+        const firstArtist = results.artists?.[0];
+        const firstSong = results.songs?.[0];
+
+        // If only one exists
+        if (!firstArtist) return { type: 'song', data: firstSong };
+        if (!firstSong) return { type: 'artist', data: firstArtist };
+
+        // Check relevance (Starts With) - Case Insensitive
+        const artistMatch = firstArtist.title?.toLowerCase().startsWith(query.toLowerCase());
+        const songMatch = firstSong.title?.toLowerCase().startsWith(query.toLowerCase());
+
+        // If one matches 'starts with' and the other doesn't, prioritize the matching one
+        if (songMatch && !artistMatch) {
+            return { type: 'song', data: firstSong };
         }
-        if (results.songs?.length > 0) {
-            return { type: 'song', data: results.songs[0] };
+        if (artistMatch && !songMatch) {
+            return { type: 'artist', data: firstArtist };
         }
-        return null;
+
+        // Default: prioritize Artist if both match or neither match (Spotify-like behavior)
+        return { type: 'artist', data: firstArtist };
     };
 
     const topResult = getTopResult();
