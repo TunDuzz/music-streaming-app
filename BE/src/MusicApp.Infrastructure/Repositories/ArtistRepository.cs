@@ -11,8 +11,14 @@ public class ArtistRepository : Repository<Artist>, IArtistRepository
 
     public async Task<IEnumerable<Artist>> SearchByNameAsync(string name)
     {
-        return await _dbSet
+        var artists = await _dbSet
             .Where(a => a.Name.Contains(name))
             .ToListAsync();
+
+        // Sort in memory to prioritize "Starts With"
+        return artists
+            .OrderByDescending(a => a.Name.StartsWith(name, StringComparison.OrdinalIgnoreCase))
+            .ThenBy(a => a.Name)
+            .ToList();
     }
 }

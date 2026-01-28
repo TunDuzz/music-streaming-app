@@ -28,10 +28,15 @@ public class SongRepository : Repository<Song>, ISongRepository
 
     public async Task<IEnumerable<Song>> SearchByTitleAsync(string title)
     {
-        return await _dbSet
+        var songs = await _dbSet
             .Where(s => s.Title.Contains(title))
             .Include(s => s.Artist)
             .Include(s => s.Album)
             .ToListAsync();
+
+        return songs
+            .OrderByDescending(s => s.Title.StartsWith(title, StringComparison.OrdinalIgnoreCase))
+            .ThenBy(s => s.Title)
+            .ToList();
     }
 }

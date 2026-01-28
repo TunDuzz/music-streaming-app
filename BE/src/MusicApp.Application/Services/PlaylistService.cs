@@ -2,6 +2,7 @@ using MusicApp.Application.DTOs.Playlists;
 using MusicApp.Application.DTOs.Songs;
 using MusicApp.Application.Interfaces;
 using MusicApp.Domain.Entities;
+using System.IO;
 
 namespace MusicApp.Application.Services;
 
@@ -11,17 +12,71 @@ public class PlaylistService : IPlaylistService
     private readonly IUserRepository _userRepository;
     private readonly ISongRepository _songRepository;
     private readonly IArtistRepository _artistRepository;
+    private readonly IFileStorageService _fileStorageService;
 
     public PlaylistService(
         IPlaylistRepository playlistRepository,
         IUserRepository userRepository,
         ISongRepository songRepository,
-        IArtistRepository artistRepository)
+        IArtistRepository artistRepository,
+        IFileStorageService fileStorageService)
     {
         _playlistRepository = playlistRepository;
         _userRepository = userRepository;
         _songRepository = songRepository;
         _artistRepository = artistRepository;
+        _fileStorageService = fileStorageService;
+    }
+
+    // ... (GetAll, GetById, GetByUserId, Create hidden for brevity) ...
+
+    public async Task<PlaylistDto?> UpdateAsync(Guid id, UpdatePlaylistDto dto)
+    {
+        var playlist = await _playlistRepository.GetByIdAsync(id);
+        if (playlist == null) return null;
+
+        if (!string.IsNullOrEmpty(dto.Name)) playlist.Name = dto.Name;
+        if (dto.Description != null) playlist.Description = dto.Description; 
+        if (dto.IsPublic.HasValue) playlist.IsPublic = dto.IsPublic.Value;
+        if (dto.CoverImageUrl != null) playlist.CoverImageUrl = dto.CoverImageUrl;
+
+        await _playlistRepository.UpdateAsync(playlist);
+        var user = await _userRepository.GetByIdAsync(playlist.UserId);
+
+        return new PlaylistDto
+        {
+            Id = playlist.Id,
+            Name = playlist.Name,
+            Description = playlist.Description,
+            IsPublic = playlist.IsPublic,
+            UserId = playlist.UserId,
+            Username = user?.Username ?? "Unknown",
+            CoverImageUrl = playlist.CoverImageUrl,
+            Songs = new List<SongDto>() // Simplified for update response
+        };
+    }
+
+    public async Task<string> UploadCoverImageAsync(Guid id, Stream fileStream, string fileName, string contentType)
+    {
+        var playlist = await _playlistRepository.GetByIdAsync(id);
+        if (playlist == null) throw new KeyNotFoundException("Playlist not found");
+
+        var bucket = "musicdb"; // Reverted to musicdb as requested
+        var objectKey = $"playlist/{id}/cover_{DateTime.UtcNow.Ticks}{Path.GetExtension(fileName)}";
+        
+        var url = await _fileStorageService.UploadFileAsync(fileStream, objectKey, contentType, bucket);
+        
+        // Delete old if exists
+        if (!string.IsNullOrEmpty(playlist.CoverObjectKey))
+        {
+             await _fileStorageService.DeleteFileAsync(bucket, playlist.CoverObjectKey);
+        }
+
+        playlist.CoverImageUrl = url;
+        playlist.CoverObjectKey = objectKey;
+        
+        await _playlistRepository.UpdateAsync(playlist);
+        return url;
     }
 
     public async Task<IEnumerable<PlaylistDto>> GetAllAsync()
@@ -43,6 +98,7 @@ public class PlaylistService : IPlaylistService
                 IsPublic = playlist.IsPublic,
                 UserId = playlist.UserId,
                 Username = user?.Username ?? "Unknown",
+                CoverImageUrl = playlist.CoverImageUrl,
                 Songs = songDtos // Empty for now or implementation dependent
             });
         }
@@ -51,36 +107,29 @@ public class PlaylistService : IPlaylistService
 
     public async Task<PlaylistDto?> GetByIdAsync(Guid id)
     {
-        // Repo should ideally include Songs and Artist info
-        // Using basic get for restoration
-        var playlist = await _playlistRepository.GetByIdAsync(id);
+        var playlist = await _playlistRepository.GetByIdWithSongsAsync(id);
         if (playlist == null) return null;
 
         var user = await _userRepository.GetByIdAsync(playlist.UserId);
         
-        // Populate songs if your repo logic supports fetching PlaylistSongs
-        // Assuming loose implementation for fix
-        var songDtos = new List<SongDto>(); 
-        if (playlist.PlaylistSongs != null)
-        {
-            foreach(var ps in playlist.PlaylistSongs)
+        var songDtos = playlist.PlaylistSongs
+            .OrderBy(ps => ps.Position) // Corrected property name
+            .Select(ps => 
             {
-                var song = await _songRepository.GetByIdAsync(ps.SongId);
-                if (song != null)
-                {
-                    var artist = await _artistRepository.GetByIdAsync(song.ArtistId);
-                    songDtos.Add(new SongDto 
-                    { 
-                        Id = song.Id, 
-                        Title = song.Title,
-                        ArtistName = artist?.Name ?? "Unknown",
-                        CoverImageUrl = song.CoverImageUrl,
-                        AudioFileUrl = song.AudioFileUrl,
-                        Duration = song.Duration
-                    });
-                }
-            }
-        }
+                var s = ps.Song;
+                return new SongDto 
+                { 
+                    Id = s.Id, 
+                    Title = s.Title,
+                    ArtistName = s.Artist?.Name ?? "Unknown",
+                    CoverImageUrl = s.CoverImageUrl,
+                    AudioFileUrl = s.AudioFileUrl,
+                    Duration = s.Duration,
+                    ArtistId = s.ArtistId,
+                    AlbumId = s.AlbumId
+                };
+            })
+            .ToList();
 
         return new PlaylistDto
         {
@@ -90,6 +139,7 @@ public class PlaylistService : IPlaylistService
             IsPublic = playlist.IsPublic,
             UserId = playlist.UserId,
             Username = user?.Username ?? "Unknown",
+            CoverImageUrl = playlist.CoverImageUrl,
             Songs = songDtos
         };
     }
@@ -110,6 +160,7 @@ public class PlaylistService : IPlaylistService
                 IsPublic = playlist.IsPublic,
                 UserId = playlist.UserId,
                 Username = user?.Username ?? "Unknown",
+                CoverImageUrl = playlist.CoverImageUrl,
                 Songs = new List<SongDto>()
             });
         }
@@ -138,34 +189,12 @@ public class PlaylistService : IPlaylistService
             IsPublic = created.IsPublic,
             UserId = created.UserId,
             Username = user?.Username ?? "Unknown",
+            CoverImageUrl = created.CoverImageUrl,
             Songs = new List<SongDto>()
         };
     }
 
-    public async Task<PlaylistDto?> UpdateAsync(Guid id, UpdatePlaylistDto dto)
-    {
-        var playlist = await _playlistRepository.GetByIdAsync(id);
-        if (playlist == null) return null;
 
-        if (!string.IsNullOrEmpty(dto.Name)) playlist.Name = dto.Name;
-        // if (dto.Description != null) playlist.Description = dto.Description; 
-        // Assuming Description in DTO. If not present in basic DTO, skip.
-        if (dto.IsPublic.HasValue) playlist.IsPublic = dto.IsPublic.Value;
-
-        await _playlistRepository.UpdateAsync(playlist);
-        var user = await _userRepository.GetByIdAsync(playlist.UserId);
-
-        return new PlaylistDto
-        {
-            Id = playlist.Id,
-            Name = playlist.Name,
-            Description = playlist.Description,
-            IsPublic = playlist.IsPublic,
-            UserId = playlist.UserId,
-            Username = user?.Username ?? "Unknown",
-            Songs = new List<SongDto>() // Simplified for update response
-        };
-    }
 
     public async Task<bool> DeleteAsync(Guid id)
     {

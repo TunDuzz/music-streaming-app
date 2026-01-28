@@ -30,13 +30,11 @@ public class SearchController : ControllerBase
         {
             // Sequential search (DbContext is not thread-safe)
             var songs = await _songService.SearchAsync(q);
-            // Optimization: Should implement Search in ArtistService, but for now filter in memory
-            var allArtists = await _artistService.GetAllAsync();
             
-            Console.WriteLine($"[SearchController] Found {songs.Count()} songs and {allArtists.Count()} artists.");
-
-            // Use null check for Name
-            var artists = allArtists.Where(a => !string.IsNullOrEmpty(a.Name) && a.Name.Contains(q, StringComparison.OrdinalIgnoreCase));
+            // Use optimized Artist Search (prioritizes StartsWith)
+            var artists = await _artistService.SearchAsync(q);
+            
+            Console.WriteLine($"[SearchController] Found {songs.Count()} songs and {artists.Count()} artists.");
 
             return Ok(new 
             {

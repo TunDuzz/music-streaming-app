@@ -30,8 +30,11 @@ public class MinioStorageService : IFileStorageService
                 Console.WriteLine($"[MinIO] Bucket {bucketName} not found. Creating...");
                 var makeArgs = new MakeBucketArgs().WithBucket(bucketName);
                 await _minioClient.MakeBucketAsync(makeArgs);
-                
-                // Set basic public read policy
+            }
+
+            // ALWAYS ensure public read policy (Fix for existing private buckets)
+            try 
+            {
                 string policyJson = $@"{{
                     ""Version"": ""2012-10-17"",
                     ""Statement"": [
@@ -45,7 +48,12 @@ public class MinioStorageService : IFileStorageService
                 }}";
                 
                 await _minioClient.SetPolicyAsync(new SetPolicyArgs().WithBucket(bucketName).WithPolicy(policyJson));
-                Console.WriteLine($"[MinIO] Bucket created and policy set.");
+                Console.WriteLine($"[MinIO] Policy ensuring public read access set for {bucketName}.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[MinIO] Warning: Could not set policy for {bucketName}. Error: {ex.Message}");
+                // Continue, as it might already be set or insufficient permissions, but try anyway.
             }
 
             // 2. Upload file

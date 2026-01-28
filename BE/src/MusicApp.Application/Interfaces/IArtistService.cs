@@ -9,4 +9,5 @@ public interface IArtistService
     Task<ArtistDto> CreateAsync(CreateArtistDto dto);
     Task<ArtistDto?> UpdateAsync(Guid id, UpdateArtistDto dto);
     Task<bool> DeleteAsync(Guid id);
+    Task<IEnumerable<ArtistDto>> SearchAsync(string query);
 }

@@ -25,6 +25,20 @@ public class PlaylistRepository : Repository<Playlist>, IPlaylistRepository
             .ToListAsync();
     }
 
+    public async Task<Playlist?> GetByIdWithSongsAsync(Guid id)
+    {
+        return await _dbSet
+            .Where(p => p.Id == id)
+            .Include(p => p.User)
+            .Include(p => p.PlaylistSongs)
+                .ThenInclude(ps => ps.Song)
+                    .ThenInclude(s => s.Artist)
+            .Include(p => p.PlaylistSongs)
+                .ThenInclude(ps => ps.Song)
+                    .ThenInclude(s => s.Album)
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<bool> AddSongAsync(Guid playlistId, Guid songId)
     {
         var playlist = await _dbSet.FindAsync(playlistId);
@@ -35,11 +49,17 @@ public class PlaylistRepository : Repository<Playlist>, IPlaylistRepository
             .AnyAsync(ps => ps.PlaylistId == playlistId && ps.SongId == songId);
         
         if (exists) return true; // Already added
+        
+        // Calculate next position
+        var maxPosition = await _context.PlaylistSongs
+            .Where(ps => ps.PlaylistId == playlistId)
+            .MaxAsync(ps => (int?)ps.Position) ?? -1;
 
         var playlistSong = new PlaylistSong
         {
             PlaylistId = playlistId,
             SongId = songId,
+            Position = maxPosition + 1,
             AddedAt = DateTime.UtcNow
         };
 

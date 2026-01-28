@@ -170,6 +170,21 @@ public class SongService : ISongService
             return new List<SongDto>();
 
         var songs = await _songRepository.SearchByTitleAsync(query);
+
+        // Fallback: If no songs found by title, try to find songs by the top matching artist
+        if (!songs.Any())
+        {
+            // Search for artists matching the query
+            var artists = await _artistRepository.SearchByNameAsync(query);
+            var topArtist = artists.FirstOrDefault();
+
+            if (topArtist != null)
+            {
+                // If an artist is found, get their songs
+                songs = await _songRepository.GetByArtistIdAsync(topArtist.Id);
+            }
+        }
+
         var songDtos = new List<SongDto>();
 
         foreach (var song in songs)

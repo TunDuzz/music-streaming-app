@@ -81,6 +81,15 @@ public class ArtistService : IArtistService
         return true;
     }
 
+    public async Task<IEnumerable<ArtistDto>> SearchAsync(string query)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+            return new List<ArtistDto>();
+
+        var artists = await _artistRepository.SearchByNameAsync(query);
+        return artists.Select(MapToDto);
+    }
+
     private ArtistDto MapToDto(Artist artist)
     {
         var dto = new ArtistDto
