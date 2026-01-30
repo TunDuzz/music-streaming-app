@@ -33,4 +33,9 @@ public class UserRepository : Repository<User>, IUserRepository
     {
         return await _dbSet.FirstOrDefaultAsync(u => u.Username == username);
     }
+
+    public async Task<int> CountAdminsAsync()
+    {
+        return await _dbSet.CountAsync(u => u.Role == MusicApp.Domain.Enums.UserRole.Admin);
+    }
 }

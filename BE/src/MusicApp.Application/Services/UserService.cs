@@ -1,6 +1,7 @@
 ﻿using MusicApp.Application.DTOs.Users;
 using MusicApp.Application.Interfaces;
 using MusicApp.Domain.Entities;
+using MusicApp.Domain.Enums;
 
 namespace MusicApp.Application.Services;
 
@@ -51,11 +52,34 @@ public class UserService : IUserService
         if (!string.IsNullOrEmpty(dto.DisplayName))
             user.DisplayName = dto.DisplayName;
 
+        if (!string.IsNullOrEmpty(dto.Username) && user.Username != dto.Username)
+        {
+            var existingUser = await _userRepository.GetByUsernameAsync(dto.Username);
+            if (existingUser != null)
+                throw new InvalidOperationException("Username is already taken.");
+            
+            user.Username = dto.Username;
+        }
+
+        if (!string.IsNullOrEmpty(dto.Email) && user.Email != dto.Email)
+        {
+            var existingUser = await _userRepository.GetByEmailAsync(dto.Email);
+             if (existingUser != null)
+                throw new InvalidOperationException("Email is already taken.");
+
+            user.Email = dto.Email;
+        }
+
         if (!string.IsNullOrEmpty(dto.AvatarUrl))
             user.AvatarUrl = dto.AvatarUrl;
 
         if (!string.IsNullOrEmpty(dto.Password))
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+
+        if (!string.IsNullOrEmpty(dto.Role) && Enum.TryParse<UserRole>(dto.Role, true, out var role))
+        {
+            user.Role = role;
+        }
 
         await _userRepository.UpdateAsync(user);
         return MapToDto(user);
@@ -63,8 +87,19 @@ public class UserService : IUserService
 
     public async Task<bool> DeleteAsync(Guid id)
     {
-        if (!await _userRepository.ExistsAsync(id))
+        var user = await _userRepository.GetByIdAsync(id);
+        if (user == null)
             return false;
+
+        // Prevent deleting the last admin
+        if (user.Role == UserRole.Admin)
+        {
+            var adminCount = await _userRepository.CountAdminsAsync();
+            if (adminCount <= 1)
+            {
+                throw new InvalidOperationException("Cannot delete the last admin account. Please assign another admin first.");
+            }
+        }
 
         await _userRepository.DeleteAsync(id);
         return true;

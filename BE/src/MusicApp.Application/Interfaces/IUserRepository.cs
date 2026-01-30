@@ -9,4 +9,5 @@ public interface IUserRepository : IRepository<User>
     Task<User?> GetByUsernameOrEmailAsync(string usernameOrEmail);
     Task<bool> ExistsByUsernameAsync(string username);
     Task<bool> ExistsByEmailAsync(string email);
+    Task<int> CountAdminsAsync();
 }
