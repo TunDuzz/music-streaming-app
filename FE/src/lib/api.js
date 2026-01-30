@@ -165,6 +165,54 @@ export const artistsApi = {
     }
 };
 
+export const albumsApi = {
+    getAll: async () => {
+        const response = await fetch(`${API_BASE_URL}/Album`, {
+            headers: getHeaders(),
+        });
+        return handleResponseSafe(response);
+    },
+    getById: async (id) => {
+        const response = await fetch(`${API_BASE_URL}/Album/${id}`, {
+            headers: getHeaders(),
+        });
+        return handleResponseSafe(response);
+    },
+    create: async (data) => {
+        const response = await fetch(`${API_BASE_URL}/Album`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(data),
+        });
+        return handleResponseSafe(response);
+    },
+    update: async (id, data) => {
+        const response = await fetch(`${API_BASE_URL}/Album/${id}`, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify(data),
+        });
+        return handleResponseSafe(response);
+    },
+    delete: async (id) => {
+        const response = await fetch(`${API_BASE_URL}/Album/${id}`, {
+            method: 'DELETE',
+            headers: getHeaders(),
+        });
+        return handleResponseSafe(response);
+    },
+    uploadImage: async (id, file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await fetch(`${API_BASE_URL}/Album/${id}/image`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: formData
+        });
+        return handleResponseSafe(response);
+    }
+};
+
 // Genres API
 export const genresApi = {
     getAll: async () => {
@@ -210,6 +258,14 @@ export const usersApi = {
         const response = await fetch(`${API_BASE_URL}/Users/${id}`, {
             method: 'DELETE',
             headers: getHeaders(),
+        });
+        return handleResponseSafe(response);
+    },
+    update: async (id, data) => {
+        const response = await fetch(`${API_BASE_URL}/Users/${id}`, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify(data),
         });
         return handleResponseSafe(response);
     }
