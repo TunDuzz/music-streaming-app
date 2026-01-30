@@ -8,11 +8,13 @@ public class AlbumService : IAlbumService
 {
     private readonly IAlbumRepository _albumRepository;
     private readonly IArtistRepository _artistRepository;
+    private readonly IFileStorageService _fileStorageService;
 
-    public AlbumService(IAlbumRepository albumRepository, IArtistRepository artistRepository)
+    public AlbumService(IAlbumRepository albumRepository, IArtistRepository artistRepository, IFileStorageService fileStorageService)
     {
         _albumRepository = albumRepository;
         _artistRepository = artistRepository;
+        _fileStorageService = fileStorageService;
     }
 
     public async Task<IEnumerable<AlbumDto>> GetAllAsync()
@@ -30,7 +32,8 @@ public class AlbumService : IAlbumService
                 ReleaseDate = album.ReleaseDate,
                 CoverImageUrl = album.CoverImageUrl,
                 ArtistId = album.ArtistId,
-                ArtistName = artist?.Name ?? "Unknown"
+                ArtistName = artist?.Name ?? "Unknown",
+                Type = album.Type.ToString()
             });
         }
         return albumDtos.AsEnumerable();
@@ -49,7 +52,8 @@ public class AlbumService : IAlbumService
             ReleaseDate = album.ReleaseDate,
             CoverImageUrl = album.CoverImageUrl,
             ArtistId = album.ArtistId,
-            ArtistName = artist?.Name ?? "Unknown"
+            ArtistName = artist?.Name ?? "Unknown",
+            Type = album.Type.ToString()
         };
     }
 
@@ -61,7 +65,8 @@ public class AlbumService : IAlbumService
             Title = dto.Title,
             ReleaseDate = dto.ReleaseDate,
             CoverImageUrl = dto.CoverImageUrl,
-            ArtistId = dto.ArtistId
+            ArtistId = dto.ArtistId,
+            Type = dto.Type
         };
 
         var created = await _albumRepository.AddAsync(album);
@@ -74,7 +79,8 @@ public class AlbumService : IAlbumService
             ReleaseDate = created.ReleaseDate,
             CoverImageUrl = created.CoverImageUrl,
             ArtistId = created.ArtistId,
-            ArtistName = artist?.Name ?? "Unknown"
+            ArtistName = artist?.Name ?? "Unknown",
+            Type = created.Type.ToString()
         };
     }
 
@@ -87,6 +93,7 @@ public class AlbumService : IAlbumService
         if (dto.ReleaseDate.HasValue) album.ReleaseDate = dto.ReleaseDate.Value;
         if (!string.IsNullOrEmpty(dto.CoverImageUrl)) album.CoverImageUrl = dto.CoverImageUrl;
         if (dto.ArtistId.HasValue) album.ArtistId = dto.ArtistId.Value;
+        if (dto.Type.HasValue) album.Type = dto.Type.Value;
 
         await _albumRepository.UpdateAsync(album);
         var artist = await _artistRepository.GetByIdAsync(album.ArtistId);
@@ -98,7 +105,8 @@ public class AlbumService : IAlbumService
             ReleaseDate = album.ReleaseDate,
             CoverImageUrl = album.CoverImageUrl,
             ArtistId = album.ArtistId,
-            ArtistName = artist?.Name ?? "Unknown"
+            ArtistName = artist?.Name ?? "Unknown",
+            Type = album.Type.ToString()
         };
     }
 
@@ -107,5 +115,23 @@ public class AlbumService : IAlbumService
         if (!await _albumRepository.ExistsAsync(id)) return false;
         await _albumRepository.DeleteAsync(id);
         return true;
+    }
+
+    public async Task<string> UploadCoverImageAsync(Guid id, System.IO.Stream fileStream, string fileName, string contentType)
+    {
+        var album = await _albumRepository.GetByIdAsync(id);
+        if (album == null)
+        {
+            throw new KeyNotFoundException($"Album with ID {id} not found.");
+        }
+
+        var folder = album.Type == MusicApp.Domain.Enums.AlbumType.Single ? "singles" : "albums";
+        var objectName = $"{folder}/{id}/{Guid.NewGuid()}{Path.GetExtension(fileName)}";
+        var url = await _fileStorageService.UploadFileAsync(fileStream, objectName, contentType, "music-app");
+
+        album.CoverImageUrl = url;
+        await _albumRepository.UpdateAsync(album);
+
+        return url;
     }
 }

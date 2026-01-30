@@ -1,9 +1,11 @@
 using System.ComponentModel.DataAnnotations;
+using MusicApp.Domain.Enums;
 
 namespace MusicApp.Application.DTOs.Albums;
 
 public class UpdateAlbumDto
 {
+    public AlbumType? Type { get; set; }
     [StringLength(100)]
     public string? Title { get; set; }
 

@@ -9,4 +9,5 @@ public interface IAlbumService
     Task<AlbumDto> CreateAsync(CreateAlbumDto dto);
     Task<AlbumDto?> UpdateAsync(Guid id, UpdateAlbumDto dto);
     Task<bool> DeleteAsync(Guid id);
+    Task<string> UploadCoverImageAsync(Guid id, System.IO.Stream fileStream, string fileName, string contentType);
 }

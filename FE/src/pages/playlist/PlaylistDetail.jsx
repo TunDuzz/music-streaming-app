@@ -21,6 +21,7 @@ import {
 } from "../../components/ui/dialog";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
+import Switch from "../../components/ui/switch";
 
 const PlaylistDetail = () => {
     const { id } = useParams();
@@ -203,66 +204,77 @@ const PlaylistDetail = () => {
 
             {/* Edit Dialog */}
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                <DialogContent className="bg-[#282828] text-white border-none sm:max-w-[525px]">
-                    <DialogHeader>
-                        <DialogTitle>Edit details</DialogTitle>
+                <DialogContent className="bg-[#282828] text-white border-none sm:max-w-[525px] p-0 overflow-hidden shadow-2xl">
+                    <DialogHeader className="px-6 pt-6 pb-2">
+                        <DialogTitle className="text-xl font-bold">Edit details</DialogTitle>
                     </DialogHeader>
-                    <div className="grid gap-4 py-4">
+                    <div className="grid gap-6 px-6 py-4">
                         <div className="flex gap-4">
                             {/* Image Upload Area */}
-                            <div className="group relative w-40 h-40 bg-[#333] flex items-center justify-center rounded-md overflow-hidden cursor-pointer shadow-lg flex-shrink-0">
+                            <div className="group relative w-[180px] h-[180px] bg-[#333] flex items-center justify-center rounded-md overflow-hidden cursor-pointer shadow-lg flex-shrink-0 transition-all hover:bg-[#3a3a3a]">
                                 {previewUrl ? (
                                     <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
                                 ) : (
-                                    <Music className="w-16 h-16 text-gray-500" />
+                                    <div className="flex flex-col items-center justify-center text-gray-500 gap-2">
+                                        <Music size={48} strokeWidth={1} />
+                                        <span className="text-xs font-medium">Choose photo</span>
+                                    </div>
                                 )}
-                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-opacity">
-                                    <Pencil className="w-8 h-8 text-white mb-2" />
-                                    <span className="text-xs text-white">Choose photo</span>
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-all backdrop-blur-[2px]">
+                                    <Pencil className="w-10 h-10 text-white mb-2" />
+                                    <span className="text-xs text-white font-medium">Change photo</span>
                                 </div>
                                 <Input
                                     type="file"
                                     accept="image/*"
-                                    className="absolute inset-0 opacity-0 cursor-pointer h-full"
+                                    className="absolute inset-0 opacity-0 cursor-pointer h-full z-10"
                                     onChange={handleFileChange}
+                                    title=""
                                 />
                             </div>
 
-                            <div className="flex flex-col gap-4 flex-grow">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="name" className="text-xs font-bold text-gray-400">Name</Label>
+                            <div className="flex flex-col gap-3 flex-grow">
+                                <div className="space-y-1.5">
                                     <Input
                                         id="name"
                                         value={editName}
                                         onChange={(e) => setEditName(e.target.value)}
-                                        className="bg-[#3E3E3E] border-none text-white focus-visible:ring-0"
+                                        className="bg-[#3E3E3E] border-none text-white focus-visible:ring-0 font-bold placeholder:text-gray-400 h-10"
                                     />
                                 </div>
-                                <div className="grid gap-2 flex-grow">
-                                    <Label htmlFor="desc" className="text-xs font-bold text-gray-400">Description</Label>
+                                <div className="flex-grow">
                                     <textarea
                                         id="desc"
                                         value={editDesc}
                                         onChange={(e) => setEditDesc(e.target.value)}
-                                        className="w-full h-full min-h-[80px] rounded-md bg-[#3E3E3E] px-3 py-2 text-sm text-white placeholder:text-muted-foreground focus-visible:outline-none resize-none font-sans"
+                                        placeholder="Add an optional description"
+                                        className="w-full h-full min-h-[100px] rounded-md bg-[#3E3E3E] border-none px-3 py-2 text-sm text-white placeholder:text-gray-400 focus-visible:outline-none resize-none font-sans scrollbar-thin scrollbar-thumb-white/10"
                                     />
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <input
-                                        type="checkbox"
-                                        id="public"
-                                        checked={editPublic}
-                                        onChange={(e) => setEditPublic(e.target.checked)}
-                                        className="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500 bg-[#3E3E3E]"
-                                    />
-                                    <Label htmlFor="public" className="text-sm cursor-pointer">Make Public</Label>
+                                <div className="flex items-center justify-between pt-1">
+                                    <div className="flex flex-col gap-0.5">
+                                        <span className="text-sm font-medium text-gray-300 select-none">Privacy</span>
+                                        <span className="text-[10px] text-gray-500">
+                                            {editPublic ? 'Anyone can see this playlist' : 'Only you can see this playlist'}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <span className={`text-xs font-bold uppercase tracking-wider ${editPublic ? 'text-green-500' : 'text-gray-500'}`}>
+                                            {editPublic ? 'Public' : 'Private'}
+                                        </span>
+                                        <Switch
+                                            id="public"
+                                            checked={editPublic}
+                                            onCheckedChange={setEditPublic}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <DialogFooter>
+                    <DialogFooter className="px-6 pb-6 pt-2">
                         <Button
-                            className="bg-white text-black hover:bg-gray-200 font-bold rounded-full px-8"
+                            className="bg-white text-black hover:bg-gray-200 font-bold rounded-full px-8 min-w-[120px] hover:scale-105 transition-transform"
                             onClick={handleUpdatePlaylist}
                             disabled={updating}
                         >

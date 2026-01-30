@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { usePlayer } from '../../contexts/PlayerContext';
 import useAudioPlayer from '../../hooks/useAudioPlayer';
 import { Button } from '../ui/button';
@@ -22,6 +23,15 @@ const Player = () => {
         progress,
         volume
     } = useAudioPlayer();
+
+    const [isDragging, setIsDragging] = useState(false);
+    const [localProgress, setLocalProgress] = useState(0);
+
+    useEffect(() => {
+        if (!isDragging) {
+            setLocalProgress(progress || 0);
+        }
+    }, [progress, isDragging]);
 
     if (!currentSong) return null;
 
@@ -77,7 +87,7 @@ const Player = () => {
                         <SkipBack size={24} fill="currentColor" />
                     </button>
                     <button
-                        className="bg-white text-black rounded-full p-2 hover:scale-105 transition-transform"
+                        className="bg-white text-black rounded-full w-10 h-10 flex items-center justify-center hover:scale-105 transition-transform"
                         onClick={togglePlay}
                     >
                         {isPlaying ? (
@@ -100,22 +110,23 @@ const Player = () => {
                 <div className="w-full flex items-center gap-2 text-xs text-gray-400 font-mono">
                     <span>{formattedTime}</span>
                     <Slider
-                        value={[progress || 0]}
+                        value={[isDragging ? localProgress : (progress || 0)]}
                         max={100}
                         step={0.1}
                         onValueChange={(val) => {
-                            // We need to fetch duration again or passed via props/context. 
-                            // The context is available via outer scope 'useAudioPlayer()' hook result? 
-                            // Wait, 'seek' is available, but 'currentSong.duration' is safer?
-                            // Actually context hook result was destructured at top.
-                            // But I need total duration in seconds.
-                            // 'currentSong.duration' is usually seconds.
-                            // Let's use that.
+                            setIsDragging(true);
+                            setLocalProgress(val[0]);
+                        }}
+                        onValueCommit={(val) => {
                             if (currentSong?.duration) {
                                 seek((val[0] / 100) * currentSong.duration);
                             }
+                            // Small delay to prevent "jump back" artifact while audio seeks
+                            setTimeout(() => {
+                                setIsDragging(false);
+                            }, 500);
                         }}
-                        className="flex-1"
+                        className="flex-1 cursor-pointer"
                     />
                     <span>{formattedDuration}</span>
                 </div>

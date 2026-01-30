@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { songsApi, artistsApi, filesApi, genresApi } from '../../lib/api';
+import { songsApi, artistsApi, filesApi, genresApi, albumsApi } from '../../lib/api';
 import {
     Table,
     TableBody,
@@ -26,6 +26,7 @@ const SongManagement = () => {
     const [songs, setSongs] = useState([]);
     const [artists, setArtists] = useState([]);
     const [genres, setGenres] = useState([]);
+    const [albums, setAlbums] = useState([]); // Add albums state
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [editingSong, setEditingSong] = useState(null);
@@ -57,14 +58,16 @@ const SongManagement = () => {
 
     const fetchData = async () => {
         try {
-            const [songsData, artistsData, genresData] = await Promise.all([
+            const [songsData, artistsData, genresData, albumsData] = await Promise.all([
                 songsApi.getAll(),
                 artistsApi.getAll().catch(() => []),
-                genresApi.getAll().catch(() => [])
+                genresApi.getAll().catch(() => []),
+                albumsApi.getAll().catch(() => [])
             ]);
             setSongs(songsData || []);
             setArtists(artistsData || []);
             setGenres(genresData || []);
+            setAlbums(albumsData || []);
         } catch (error) {
             console.error('Error fetching data:', error);
         } finally {
@@ -150,10 +153,7 @@ const SongManagement = () => {
             alert("⚠️ Duration must be > 0 seconds.");
             return;
         }
-        if (formData.albumId && !/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(formData.albumId)) {
-            alert("⚠️ Album ID invalid (must be UUID) or empty.");
-            return;
-        }
+
 
         setSubmitting(true);
         try {
@@ -343,13 +343,21 @@ const SongManagement = () => {
                             </select>
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
-                            <Label className="text-right text-gray-300">Album ID</Label>
-                            <Input
-                                className="col-span-3 bg-white/5 border-white/10 text-white"
-                                placeholder="Optional UUID"
+                            <Label className="text-right text-gray-300">Album</Label>
+                            <select
+                                className="col-span-3 h-10 w-full bg-white/5 border-white/10 border rounded-md px-3 py-2 text-sm text-white focus:outline-none"
                                 value={formData.albumId}
                                 onChange={e => setFormData({ ...formData, albumId: e.target.value })}
-                            />
+                            >
+                                <option value="" className="text-black">No Album (Single)</option>
+                                {albums
+                                    .filter(a => !formData.artistId || a.artistId === formData.artistId) // Filter by selected artist
+                                    .map(album => (
+                                        <option key={album.id} value={album.id} className="text-black">
+                                            {album.title} ({album.type})
+                                        </option>
+                                    ))}
+                            </select>
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label className="text-right text-gray-300">Duration (s)</Label>
@@ -439,5 +447,6 @@ const SongManagement = () => {
         </div>
     );
 };
+
 
 export default SongManagement;

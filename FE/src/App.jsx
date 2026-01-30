@@ -28,6 +28,7 @@ import ArtistManagement from './pages/admin/ArtistManagement';
 import SongManagement from './pages/admin/SongManagement';
 import GenreManagement from './pages/admin/GenreManagement';
 import PlaylistManagement from './pages/admin/PlaylistManagement';
+import AlbumManagement from './pages/admin/AlbumManagement';
 
 function App() {
   return (
@@ -67,6 +68,7 @@ function App() {
                   <Route path="/songs" element={<SongManagement />} />
                   <Route path="/genres" element={<GenreManagement />} />
                   <Route path="/playlists" element={<PlaylistManagement />} />
+                  <Route path="/albums" element={<AlbumManagement />} />
                   <Route path="*" element={<Navigate to="/admin" replace />} />
                 </Routes>
               </AdminLayout>

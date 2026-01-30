@@ -57,6 +57,7 @@ const AdminLayout = ({ children }) => {
                     <NavItem to="/admin/artists" icon={Music} label="Artists" />
                     <NavItem to="/admin/songs" icon={Music} label="Songs" />
                     <NavItem to="/admin/playlists" icon={ListMusic} label="Playlists" />
+                    <NavItem to="/admin/albums" icon={Disc3} label="Albums" />
                     <NavItem to="/admin/genres" icon={Music} label="Genres" />
                 </nav>
 

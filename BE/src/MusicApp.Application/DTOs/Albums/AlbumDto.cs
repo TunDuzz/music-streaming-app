@@ -9,4 +9,5 @@ public class AlbumDto : BaseDto
     public int TotalTracks { get; set; }
     public Guid ArtistId { get; set; }
     public string ArtistName { get; set; } = string.Empty;
+    public string Type { get; set; } = "Album";
 }

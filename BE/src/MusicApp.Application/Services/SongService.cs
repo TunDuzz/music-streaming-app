@@ -9,14 +9,16 @@ public class SongService : ISongService
 {
     private readonly ISongRepository _songRepository;
     private readonly IArtistRepository _artistRepository;
-    private readonly IGenreRepository _genreRepository; // Restored field
+    private readonly IGenreRepository _genreRepository;
+    private readonly IAlbumRepository _albumRepository;
     private readonly IConfiguration _configuration;
 
-    public SongService(ISongRepository songRepository, IArtistRepository artistRepository, IGenreRepository genreRepository, IConfiguration configuration)
+    public SongService(ISongRepository songRepository, IArtistRepository artistRepository, IGenreRepository genreRepository, IAlbumRepository albumRepository, IConfiguration configuration)
     {
         _songRepository = songRepository;
         _artistRepository = artistRepository;
         _genreRepository = genreRepository;
+        _albumRepository = albumRepository;
         _configuration = configuration;
     }
 
@@ -33,7 +35,14 @@ public class SongService : ISongService
              genreName = genre?.Name ?? "Unknown";
         }
 
-        return MapToDto(song, artist?.Name ?? "Unknown", genreName);
+        string albumTitle = "Unknown";
+        if (song.AlbumId.HasValue)
+        {
+             var album = await _albumRepository.GetByIdAsync(song.AlbumId.Value);
+             albumTitle = album?.Title ?? "Unknown";
+        }
+
+        return MapToDto(song, artist?.Name ?? "Unknown", genreName, albumTitle);
     }
 
     public async Task<IEnumerable<SongDto>> GetAllAsync()
@@ -50,7 +59,13 @@ public class SongService : ISongService
                 var genre = await _genreRepository.GetByIdAsync(song.GenreId.Value);
                 genreName = genre?.Name ?? "Unknown";
             }
-            songDtos.Add(MapToDto(song, artist?.Name ?? "Unknown", genreName));
+            string albumTitle = "Unknown";
+            if (song.AlbumId.HasValue)
+            {
+                var album = await _albumRepository.GetByIdAsync(song.AlbumId.Value);
+                albumTitle = album?.Title ?? "Unknown";
+            }
+            songDtos.Add(MapToDto(song, artist?.Name ?? "Unknown", genreName, albumTitle));
         }
 
         return songDtos;
@@ -70,7 +85,13 @@ public class SongService : ISongService
                 var genre = await _genreRepository.GetByIdAsync(song.GenreId.Value);
                 genreName = genre?.Name ?? "Unknown";
             }
-             songDtos.Add(MapToDto(song, artist?.Name ?? "Unknown", genreName));
+             string albumTitle = "Unknown";
+             if (song.AlbumId.HasValue)
+             {
+                 var album = await _albumRepository.GetByIdAsync(song.AlbumId.Value);
+                 albumTitle = album?.Title ?? "Unknown";
+             }
+             songDtos.Add(MapToDto(song, artist?.Name ?? "Unknown", genreName, albumTitle));
         }
         return songDtos;
     }
@@ -104,7 +125,14 @@ public class SongService : ISongService
             genreName = genre?.Name ?? "Unknown";
         }
         
-        return MapToDto(created, artist?.Name ?? "Unknown", genreName);
+        string albumTitle = "Unknown";
+        if (created.AlbumId.HasValue)
+        {
+            var album = await _albumRepository.GetByIdAsync(created.AlbumId.Value);
+            albumTitle = album?.Title ?? "Unknown";
+        }
+
+        return MapToDto(created, artist?.Name ?? "Unknown", genreName, albumTitle);
     }
 
     public async Task<SongDto?> UpdateAsync(Guid id, UpdateSongDto dto)
@@ -152,7 +180,14 @@ public class SongService : ISongService
             genreName = genre?.Name ?? "Unknown";
         }
 
-        return MapToDto(song, artist?.Name ?? "Unknown", genreName);
+        string albumTitle = "Unknown";
+        if (song.AlbumId.HasValue)
+        {
+            var album = await _albumRepository.GetByIdAsync(song.AlbumId.Value);
+            albumTitle = album?.Title ?? "Unknown";
+        }
+
+        return MapToDto(song, artist?.Name ?? "Unknown", genreName, albumTitle);
     }
 
     public async Task<bool> DeleteAsync(Guid id)
@@ -196,13 +231,19 @@ public class SongService : ISongService
                 var genre = await _genreRepository.GetByIdAsync(song.GenreId.Value);
                 genreName = genre?.Name ?? "Unknown";
             }
-            songDtos.Add(MapToDto(song, artist?.Name ?? "Unknown", genreName));
+            string albumTitle = "Unknown";
+            if (song.AlbumId.HasValue)
+            {
+                var album = await _albumRepository.GetByIdAsync(song.AlbumId.Value);
+                albumTitle = album?.Title ?? "Unknown";
+            }
+            songDtos.Add(MapToDto(song, artist?.Name ?? "Unknown", genreName, albumTitle));
         }
 
         return songDtos;
     }
 
-    private SongDto MapToDto(Song song, string artistName, string genreName)
+    private SongDto MapToDto(Song song, string artistName, string genreName, string albumTitle = null)
     {
         // Robust URL Generation using Configuration
         var endpoint = _configuration["Minio:Endpoint"];
@@ -236,6 +277,7 @@ public class SongService : ISongService
             ArtistId = song.ArtistId,
             ArtistName = artistName,
             AlbumId = song.AlbumId,
+            AlbumTitle = albumTitle,
             GenreId = song.GenreId,
             GenreName = genreName,
             CreatedAt = song.CreatedAt,
