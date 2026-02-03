@@ -65,3 +65,7 @@ logs/
 *.swp
 *.tmp
 
+
+RULES.md
+
+docs/

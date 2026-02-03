@@ -324,7 +324,20 @@ const PlaylistDetail = () => {
                                         <img src={song.coverImageUrl} className="w-10 h-10 object-cover rounded shadow" alt="" />
                                         <div className="flex flex-col truncate">
                                             <span className={`font-medium truncate text-base ${isCurrentSong ? 'text-green-500' : 'text-white'}`}>{song.title}</span>
-                                            <span className="text-xs group-hover:text-white transition-colors">{song.artistName}</span>
+                                            <div className="text-xs group-hover:text-white transition-colors truncate">
+                                                {(() => {
+                                                    const artistList = song.artists && song.artists.length > 0
+                                                        ? song.artists
+                                                        : (song.artistName || '').split(',').map(name => ({ name: name.trim() }));
+
+                                                    return artistList.map((artist, index) => (
+                                                        <span key={index}>
+                                                            <span className="hover:underline cursor-pointer">{artist.name}</span>
+                                                            {index < artistList.length - 1 && ", "}
+                                                        </span>
+                                                    ));
+                                                })()}
+                                            </div>
                                         </div>
                                     </div>
 

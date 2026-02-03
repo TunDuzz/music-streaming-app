@@ -9,11 +9,13 @@ public class ArtistService : IArtistService
 {
     private readonly IArtistRepository _artistRepository;
     private readonly IConfiguration _configuration;
+    private readonly IFileStorageService _fileStorageService;
 
-    public ArtistService(IArtistRepository artistRepository, IConfiguration configuration)
+    public ArtistService(IArtistRepository artistRepository, IConfiguration configuration, IFileStorageService fileStorageService)
     {
         _artistRepository = artistRepository;
         _configuration = configuration;
+        _fileStorageService = fileStorageService;
     }
 
     public async Task<ArtistDto?> GetByIdAsync(Guid id)
@@ -65,8 +67,7 @@ public class ArtistService : IArtistService
         if (dto.Country != null)
             artist.Country = dto.Country;
 
-        if (dto.ArtistImageObjectKeys != null)
-            artist.ArtistImageObjectKeys = dto.ArtistImageObjectKeys;
+
 
         await _artistRepository.UpdateAsync(artist);
         return MapToDto(artist);
@@ -74,8 +75,25 @@ public class ArtistService : IArtistService
 
     public async Task<bool> DeleteAsync(Guid id)
     {
-        if (!await _artistRepository.ExistsAsync(id))
-            return false;
+        var artist = await _artistRepository.GetByIdAsync(id);
+        if (artist == null) return false;
+
+        var bucket = "Artists";
+
+        // 1. Delete Avatar
+        if (!string.IsNullOrEmpty(artist.AvatarObjectKey))
+        {
+            try
+            {
+                 await _fileStorageService.DeleteFileAsync(bucket, artist.AvatarObjectKey);
+            }
+            catch(Exception ex) 
+            {
+                Console.WriteLine($"Error deleting avatar for artist {id}: {ex.Message}");
+            }
+        }
+
+
 
         await _artistRepository.DeleteAsync(id);
         return true;
@@ -97,33 +115,16 @@ public class ArtistService : IArtistService
             Id = artist.Id,
             Name = artist.Name,
             Bio = artist.Bio,
-            AvatarUrl = artist.AvatarUrl, // This could be enhanced to be a full URL if AvatarUrl is just a relative path or we use ObjectKey
+            AvatarUrl = artist.AvatarUrl,
             AvatarObjectKey = artist.AvatarObjectKey,
             Country = artist.Country,
             FollowerCount = artist.FollowerCount,
-            ArtistImageObjectKeys = artist.ArtistImageObjectKeys,
+
             CreatedAt = artist.CreatedAt,
             UpdatedAt = artist.UpdatedAt
         };
 
-        if (!string.IsNullOrEmpty(artist.ArtistImageObjectKeys))
-        {
-            try
-            {
-                var keys = System.Text.Json.JsonSerializer.Deserialize<List<string>>(artist.ArtistImageObjectKeys);
-                if (keys != null)
-                {
-                    var endpoint = _configuration["Minio:Endpoint"];
-                    var useSSLStr = _configuration["Minio:UseSSL"];
-                    var useSSL = !string.IsNullOrEmpty(useSSLStr) && bool.Parse(useSSLStr);
-                    var protocol = useSSL ? "https" : "http";
-                    var bucket = "musicdb";
 
-                    dto.ImageUrls = keys.Select(k => $"{protocol}://{endpoint}/{bucket}/{k}").ToList();
-                }
-            }
-            catch { }
-        }
 
         return dto;
     }

@@ -32,6 +32,8 @@ const ArtistManagement = () => {
 
     // Upload state
     const [uploading, setUploading] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     const avatarInputRef = useRef(null);
 
     // Form State
@@ -61,6 +63,7 @@ const ArtistManagement = () => {
 
     const handleOpenDialog = (artist = null) => {
         setUploading(false);
+        setIsSubmitting(false);
         setAvatarFile(null);
         if (artist) {
             setEditingArtist(artist);
@@ -94,15 +97,12 @@ const ArtistManagement = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setIsSubmitting(true);
 
         try {
             if (editingArtist) {
-                // Update logic... (if avatar changed, might need separate upload or update CreateWithUpload to UpdateWithUpload logic, but for now stick to simple update or new file logic if needed. 
-                // For simplicity, existing logic for update is fine, but if we want to update avatar with new structure we might need UpdateWithUpload too.
-                // Requirement only asked "Why artist part is not like song?". Standardizing creation is key.
+                // Update logic...
                 const updated = await artistsApi.update(editingArtist.id, formData);
-                // If there's a new avatar file during edit, we might need to handle it. 
-                // But let's focus on Creation parity first.
                 if (updated) {
                     fetchArtists();
                     setIsDialogOpen(false);
@@ -129,6 +129,8 @@ const ArtistManagement = () => {
             }
         } catch (error) {
             alert('Operation failed: ' + error.message);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -282,7 +284,7 @@ const ArtistManagement = () => {
                                     size="icon"
                                     className="shrink-0 border-white/10 hover:bg-white/5"
                                     onClick={() => avatarInputRef.current?.click()}
-                                    disabled={uploading}
+                                    disabled={uploading || isSubmitting}
                                 >
                                     {uploading ? <Loader2 className="animate-spin h-4 w-4" /> : <Upload className="h-4 w-4" />}
                                 </Button>
@@ -335,7 +337,7 @@ const ArtistManagement = () => {
                                         variant="outline"
                                         className="w-full border-white/10 hover:bg-white/5"
                                         onClick={() => document.getElementById('gallery-upload').click()}
-                                        disabled={uploading}
+                                        disabled={uploading || isSubmitting}
                                     >
                                         {uploading ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
                                         Upload Gallery Images
@@ -345,8 +347,17 @@ const ArtistManagement = () => {
                         )}
 
                         <div className="pt-4 flex justify-end gap-2">
-                            <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)} className="hover:bg-white/10">Cancel</Button>
-                            <Button type="submit" className="bg-primary hover:bg-primary/90 text-white">Save Changes</Button>
+                            <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)} className="hover:bg-white/10" disabled={isSubmitting}>Cancel</Button>
+                            <Button type="submit" className="bg-primary hover:bg-primary/90 text-white" disabled={isSubmitting}>
+                                {isSubmitting ? (
+                                    <>
+                                        <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                                        Saving...
+                                    </>
+                                ) : (
+                                    "Save Changes"
+                                )}
+                            </Button>
                         </div>
                     </form>
                 </DialogContent>

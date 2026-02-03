@@ -56,41 +56,44 @@ public class SongsController : ControllerBase
     {
         string audioObjectKey = "";
         string coverObjectKey = "";
-        string bucket = "music-app"; // Requirement says MusicDB, but code uses 'music-app'. I should probably update this to 'MusicDB' to match requirement OR user input? User said "I use only 1 bucket" but didn't correct the name. I will stick to "music-app" or what is in config? 
-        // Wait, user said "Bucket: MusicDB" in the request. I should probably switch to "MusicDB" or use config. 
-        // The existing code has "music-app". I'll use "MusicDB" as per requirement.
-        bucket = "musicdb"; // MinIO requires lowercase bucket names
+        string bucket = "Songs"; 
+        // Use "Songs" bucket (folder) in Cloudinary
+
 
         try 
         {
             var titleSlug = SanitizeFileName(request.Title);
             
             // 1. Upload Audio
-            // Structure: songs/{SongTitleSlug}/audio/{Guid}{ext}
+            // Structure: {SongTitleSlug}/audio/{Guid}{ext} (Relative to bucket "Songs")
             var audioParams = GetFileParams(request.AudioFile);
-            audioObjectKey = $"songs/{titleSlug}/audio/{Guid.NewGuid()}{audioParams.Extension}";
+            audioObjectKey = $"{titleSlug}/audio/{Guid.NewGuid()}{audioParams.Extension}";
             
             using var audioStream = request.AudioFile.OpenReadStream();
-            var audioUrl = await _fileStorageService.UploadFileAsync(audioStream, audioObjectKey, request.AudioFile.ContentType, bucket);
+            var audioResult = await _fileStorageService.UploadFileAsync(audioStream, audioObjectKey, request.AudioFile.ContentType, bucket);
+            var audioUrl = audioResult.Url;
+            var duration = (int)audioResult.Duration;
 
             // 2. Upload Cover (if any)
             string? coverUrl = null;
             if (request.CoverFile != null)
             {
                 var coverParams = GetFileParams(request.CoverFile);
-                coverObjectKey = $"songs/{titleSlug}/cover/{Guid.NewGuid()}{coverParams.Extension}";
+                coverObjectKey = $"{titleSlug}/cover/{Guid.NewGuid()}{coverParams.Extension}";
                 
                 using var coverStream = request.CoverFile.OpenReadStream();
-                coverUrl = await _fileStorageService.UploadFileAsync(coverStream, coverObjectKey, request.CoverFile.ContentType, bucket);
+                var coverResult = await _fileStorageService.UploadFileAsync(coverStream, coverObjectKey, request.CoverFile.ContentType, bucket);
+                coverUrl = coverResult.Url;
             }
 
             // 3. Create Song in DB
             var dto = new CreateSongDto
             {
                 Title = request.Title,
-                Duration = request.Duration,
-                ArtistId = request.ArtistId,
+                Duration = duration > 0 ? duration : request.Duration,
+                ArtistIds = request.ArtistIds,
                 AlbumId = request.AlbumId,
+                GenreId = request.GenreId,
                 Lyrics = request.Lyrics,
                 AudioFileUrl = audioUrl,
                 AudioObjectKey = audioObjectKey,

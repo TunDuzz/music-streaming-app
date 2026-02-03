@@ -127,11 +127,34 @@ public class AlbumService : IAlbumService
 
         var folder = album.Type == MusicApp.Domain.Enums.AlbumType.Single ? "singles" : "albums";
         var objectName = $"{folder}/{id}/{Guid.NewGuid()}{Path.GetExtension(fileName)}";
-        var url = await _fileStorageService.UploadFileAsync(fileStream, objectName, contentType, "music-app");
+        var result = await _fileStorageService.UploadFileAsync(fileStream, objectName, contentType, "music-app");
+        var url = result.Url;
 
         album.CoverImageUrl = url;
         await _albumRepository.UpdateAsync(album);
 
         return url;
+    }
+
+    public async Task<IEnumerable<AlbumDto>> SearchAsync(string query)
+    {
+        var albums = await _albumRepository.SearchAsync(query);
+        var albumDtos = new List<AlbumDto>();
+
+        foreach (var album in albums)
+        {
+            var artist = await _artistRepository.GetByIdAsync(album.ArtistId);
+            albumDtos.Add(new AlbumDto
+            {
+                Id = album.Id,
+                Title = album.Title,
+                ReleaseDate = album.ReleaseDate,
+                CoverImageUrl = album.CoverImageUrl,
+                ArtistId = album.ArtistId,
+                ArtistName = artist?.Name ?? "Unknown",
+                Type = album.Type.ToString()
+            });
+        }
+        return albumDtos;
     }
 }

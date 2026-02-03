@@ -10,9 +10,8 @@ public class Artist : BaseEntity
     public int FollowerCount { get; set; }
 
     public ICollection<Album> Albums { get; set; } = new List<Album>();
-    public ICollection<Song> Songs { get; set; } = new List<Song>();
+    public ICollection<SongArtist> SongArtists { get; set; } = new List<SongArtist>();
     public ICollection<UserFollowsArtist> Followers { get; set; } = new List<UserFollowsArtist>();
 
-    // MinIO Object Keys for Artist Images (stored as JSON or separated by ;)
-    public string? ArtistImageObjectKeys { get; set; }
+
 }

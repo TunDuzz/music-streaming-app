@@ -9,4 +9,5 @@ public interface IPlaylistRepository : IRepository<Playlist>
     Task<Playlist?> GetByIdWithSongsAsync(Guid id);
     Task<bool> AddSongAsync(Guid playlistId, Guid songId);
     Task<bool> RemoveSongAsync(Guid playlistId, Guid songId);
+    Task<IEnumerable<Playlist>> SearchAsync(string query);
 }

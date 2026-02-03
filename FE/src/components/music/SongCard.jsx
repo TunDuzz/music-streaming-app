@@ -57,9 +57,20 @@ const SongCard = ({ song }) => {
                         <h3 className={cn("font-bold text-white truncate", isCurrent && "text-green-500")}>
                             {song.title}
                         </h3>
-                        <p className="text-sm text-gray-400 truncate hover:underline">
-                            {song.artistName || song.artist}
-                        </p>
+                        <div className="text-sm text-gray-400 truncate">
+                            {(() => {
+                                const artistList = song.artists && song.artists.length > 0
+                                    ? song.artists
+                                    : (song.artistName || song.artist || '').split(',').map(name => ({ name: name.trim() }));
+
+                                return artistList.map((artist, index) => (
+                                    <span key={index}>
+                                        <span className="hover:underline cursor-pointer">{artist.name}</span>
+                                        {index < artistList.length - 1 && ", "}
+                                    </span>
+                                ));
+                            })()}
+                        </div>
                     </div>
 
                     {/* More Options Menu */}

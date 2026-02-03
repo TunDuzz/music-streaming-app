@@ -48,7 +48,7 @@ public class ArtistsController : ControllerBase
     public async Task<ActionResult<ArtistDto>> CreateWithUpload([FromForm] CreateArtistRequest request)
     {
         string avatarObjectKey = "";
-        string bucket = "musicdb";
+        string bucket = "Artists";
 
         try 
         {
@@ -57,11 +57,12 @@ public class ArtistsController : ControllerBase
             {
                 var titleSlug = SanitizeFileName(request.Name);
                 var ext = Path.GetExtension(request.AvatarFile.FileName).ToLower();
-                // Structure: artists/{ArtistName}/avatar/{Guid}.ext
-                avatarObjectKey = $"artists/{titleSlug}/avatar/{Guid.NewGuid()}{ext}";
+                // Structure: {ArtistName}/avatar/{Guid}.ext
+                avatarObjectKey = $"{titleSlug}/avatar/{Guid.NewGuid()}{ext}";
                 
                 using var stream = request.AvatarFile.OpenReadStream();
-                avatarUrl = await _fileStorageService.UploadFileAsync(stream, avatarObjectKey, request.AvatarFile.ContentType, bucket);
+                var result = await _fileStorageService.UploadFileAsync(stream, avatarObjectKey, request.AvatarFile.ContentType, bucket);
+                avatarUrl = result.Url;
             }
 
             var dto = new CreateArtistDto
@@ -114,51 +115,7 @@ public class ArtistsController : ControllerBase
         return NoContent();
     }
 
-    [HttpPost("{id}/images")]
-    [Authorize(Roles = "Admin")]
-    public async Task<ActionResult> UploadImages(Guid id, [FromForm] List<IFormFile> files)
-    {
-        var artist = await _artistService.GetByIdAsync(id);
-        if (artist == null) return NotFound("Artist not found");
 
-        var bucket = "musicdb";
-        var titleSlug = SanitizeFileName(artist.Name);
-        var uploadedKeys = new List<string>();
-
-        // Deserialize existing keys if any
-        if (!string.IsNullOrEmpty(artist.ArtistImageObjectKeys))
-        {
-            try 
-            {
-                var existing = System.Text.Json.JsonSerializer.Deserialize<List<string>>(artist.ArtistImageObjectKeys);
-                if(existing != null) uploadedKeys.AddRange(existing);
-            }
-            catch {}
-        }
-
-        foreach (var file in files)
-        {
-            if (file.Length == 0) continue;
-
-            var ext = Path.GetExtension(file.FileName).ToLower();
-            // Structure: artists/{ArtistName}/images/{Guid}{ext}
-            var objectKey = $"artists/{titleSlug}/images/{Guid.NewGuid()}{ext}";
-
-            using var stream = file.OpenReadStream();
-            await _fileStorageService.UploadFileAsync(stream, objectKey, file.ContentType, bucket);
-            uploadedKeys.Add(objectKey);
-        }
-
-        // Update Artist with new keys
-        var updateDto = new UpdateArtistDto
-        {
-            ArtistImageObjectKeys = System.Text.Json.JsonSerializer.Serialize(uploadedKeys)
-        };
-
-        await _artistService.UpdateAsync(id, updateDto);
-
-        return Ok(new { Message = "Images uploaded", Keys = uploadedKeys });
-    }
 
     private string SanitizeFileName(string name)
     {

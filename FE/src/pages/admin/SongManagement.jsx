@@ -20,7 +20,8 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "../../components/ui/dialog";
-import { Plus, Pencil, Trash2, Search, Upload, Loader2, FileAudio, Image as ImageIcon } from 'lucide-react';
+
+import { Plus, Pencil, Trash2, Search, Upload, Loader2, FileAudio, Image as ImageIcon, Check } from 'lucide-react';
 
 const SongManagement = () => {
     const [songs, setSongs] = useState([]);
@@ -33,6 +34,8 @@ const SongManagement = () => {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [submitting, setSubmitting] = useState(false); // New global loading
 
+    const [artistSearchTerm, setArtistSearchTerm] = useState('');
+
     // File selection state (for Create mode)
     const [selectedFiles, setSelectedFiles] = useState({ song: null, cover: null });
 
@@ -44,12 +47,12 @@ const SongManagement = () => {
 
     const [formData, setFormData] = useState({
         title: '',
-        artistId: '',
+        artistIds: [], // Changed from artistId to artistIds array
         albumId: '',
         genreId: '',
         duration: '',
-        songUrl: '', // Stores URL (Edit) or Filename (Create)
-        coverUrl: '' // Stores URL (Edit) or PreviewURL (Create)
+        songUrl: '',
+        coverUrl: ''
     });
 
     useEffect(() => {
@@ -84,7 +87,7 @@ const SongManagement = () => {
             setEditingSong(song);
             setFormData({
                 title: song.title || '',
-                artistId: song.artistId || '',
+                artistIds: song.artists ? song.artists.map(a => a.id) : [], // Map artists to IDs
                 albumId: song.albumId || '',
                 genreId: song.genreId || '',
                 duration: song.duration || '',
@@ -95,7 +98,7 @@ const SongManagement = () => {
             setEditingSong(null);
             setFormData({
                 title: '',
-                artistId: '',
+                artistIds: [],
                 albumId: '',
                 genreId: '',
                 duration: '',
@@ -117,7 +120,7 @@ const SongManagement = () => {
             try {
                 const result = await filesApi.upload(file);
                 if (result && result.url) {
-                    if (type === 'song') setFormData(prev => ({ ...prev, songUrl: result.url }));
+                    if (type === 'song') setFormData(prev => ({ ...prev, songUrl: result.url, duration: result.duration || prev.duration }));
                     if (type === 'cover') setFormData(prev => ({ ...prev, coverUrl: result.url }));
                 }
             } catch (error) {
@@ -144,15 +147,12 @@ const SongManagement = () => {
         e.preventDefault();
 
         // Common Validation
-        if (!formData.artistId) {
-            alert("⚠️ Please select an artist!");
+        if (!formData.artistIds || formData.artistIds.length === 0) {
+            alert("⚠️ Please select at least one artist!");
             return;
         }
         const durationVal = parseInt(formData.duration) || 0;
-        if (durationVal <= 0) {
-            alert("⚠️ Duration must be > 0 seconds.");
-            return;
-        }
+
 
 
         setSubmitting(true);
@@ -167,7 +167,7 @@ const SongManagement = () => {
                     duration: durationVal,
                     audioFileUrl: formData.songUrl,
                     coverImageUrl: formData.coverUrl,
-                    artistId: formData.artistId,
+                    artistIds: formData.artistIds,
                     albumId: formData.albumId ? formData.albumId : null,
                     genreId: formData.genreId ? formData.genreId : null,
                 };
@@ -183,7 +183,8 @@ const SongManagement = () => {
                 const data = new FormData();
                 data.append('Title', formData.title);
                 data.append('Duration', durationVal);
-                data.append('ArtistId', formData.artistId);
+                // Append each artist ID
+                formData.artistIds.forEach(id => data.append('ArtistIds', id));
                 if (formData.albumId) data.append('AlbumId', formData.albumId);
                 if (formData.genreId) data.append('GenreId', formData.genreId);
 
@@ -219,7 +220,7 @@ const SongManagement = () => {
 
     const filteredSongs = songs.filter(s =>
         s.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.artistName?.toLowerCase().includes(searchTerm.toLowerCase())
+        s.artists?.some(a => a.name.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     return (
@@ -273,7 +274,9 @@ const SongManagement = () => {
                                         </div>
                                     </TableCell>
                                     <TableCell className="font-medium text-white">{song.title}</TableCell>
-                                    <TableCell className="text-gray-400">{song.artistName}</TableCell>
+                                    <TableCell className="text-gray-400">
+                                        {song.artists && song.artists.map(a => a.name).join(', ')}
+                                    </TableCell>
                                     <TableCell className="text-gray-400">{song.genreName || '-'}</TableCell>
                                     <TableCell className="text-gray-400">{song.albumTitle || '-'}</TableCell>
                                     <TableCell className="text-right">
@@ -294,7 +297,7 @@ const SongManagement = () => {
             </div>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="bg-[#121212] border-white/10 text-white sm:max-w-lg overflow-y-auto max-h-[85vh]">
+                <DialogContent className="bg-[#121212] border-white/10 text-white sm:max-w-2xl overflow-y-auto max-h-[90vh] p-6">
                     <DialogHeader>
                         <DialogTitle className="text-xl">{editingSong ? "Edit Song" : "Add New Song"}</DialogTitle>
                         <DialogDescription className="text-gray-400">
@@ -305,27 +308,54 @@ const SongManagement = () => {
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label className="text-right text-gray-300">Title</Label>
                             <Input
-                                className="col-span-3 bg-white/5 border-white/10 text-white"
+                                className="col-span-3 bg-white/5 border-white/10 text-white h-11 focus-visible:ring-primary/50"
                                 value={formData.title}
                                 onChange={e => setFormData({ ...formData, title: e.target.value })}
                                 required
                             />
                         </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label className="text-right text-gray-300">Artist</Label>
-                            <select
-                                className="col-span-3 h-10 w-full bg-white/5 border-white/10 border rounded-md px-3 py-2 text-sm text-white focus:outline-none"
-                                value={formData.artistId}
-                                onChange={e => setFormData({ ...formData, artistId: e.target.value })}
-                                required
-                            >
-                                <option value="" className="text-black">Select Artist</option>
-                                {artists.map(artist => (
-                                    <option key={artist.id} value={artist.id} className="text-black">
-                                        {artist.name}
-                                    </option>
-                                ))}
-                            </select>
+                        <div className="grid grid-cols-4 items-start gap-4">
+                            <Label className="text-right text-gray-300 mt-2">Artists (Ctrl+Click)</Label>
+                            <div className="col-span-3 border border-white/10 rounded-md bg-white/5 p-3">
+                                <div className="relative mb-2">
+                                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                                    <Input
+                                        placeholder="Search artists..."
+                                        className="pl-8 bg-black/20 border-white/10 h-8 text-sm focus-visible:ring-primary/50"
+                                        value={artistSearchTerm}
+                                        onChange={e => setArtistSearchTerm(e.target.value)}
+                                    />
+                                </div>
+                                <div className="h-40 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                                    {artists
+                                        .filter(a => a.name.toLowerCase().includes(artistSearchTerm.toLowerCase()))
+                                        .map(artist => {
+                                            const isSelected = formData.artistIds.includes(artist.id);
+                                            return (
+                                                <div key={artist.id}
+                                                    className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${isSelected ? 'bg-primary/20' : 'hover:bg-white/5'}`}
+                                                    onClick={() => {
+                                                        const selected = isSelected
+                                                            ? formData.artistIds.filter(id => id !== artist.id)
+                                                            : [...formData.artistIds, artist.id];
+                                                        setFormData({ ...formData, artistIds: selected });
+                                                    }}
+                                                >
+                                                    <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${isSelected ? 'bg-primary border-primary' : 'border-gray-500'}`}>
+                                                        {isSelected && <Check size={12} className="text-primary-foreground" />}
+                                                    </div>
+                                                    <span className={`text-sm ${isSelected ? 'text-white font-medium' : 'text-gray-300'}`}>{artist.name}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    {artists.filter(a => a.name.toLowerCase().includes(artistSearchTerm.toLowerCase())).length === 0 && (
+                                        <div className="text-center text-gray-500 text-sm py-4">No artists found</div>
+                                    )}
+                                </div>
+                                <div className="text-xs text-gray-400 mt-2 text-right border-t border-white/10 pt-2">
+                                    {formData.artistIds.length} selected
+                                </div>
+                            </div>
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label className="text-right text-gray-300">Genre</Label>
@@ -351,7 +381,7 @@ const SongManagement = () => {
                             >
                                 <option value="" className="text-black">No Album (Single)</option>
                                 {albums
-                                    .filter(a => !formData.artistId || a.artistId === formData.artistId) // Filter by selected artist
+                                    .filter(a => !formData.artistIds.length || formData.artistIds.includes(a.artistId)) // Filter by selected artists
                                     .map(album => (
                                         <option key={album.id} value={album.id} className="text-black">
                                             {album.title} ({album.type})
@@ -359,16 +389,7 @@ const SongManagement = () => {
                                     ))}
                             </select>
                         </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label className="text-right text-gray-300">Duration (s)</Label>
-                            <Input
-                                type="number"
-                                className="col-span-3 bg-white/5 border-white/10 text-white"
-                                value={formData.duration}
-                                onChange={e => setFormData({ ...formData, duration: e.target.value })}
-                                required min="1"
-                            />
-                        </div>
+
 
                         {/* Song File */}
                         <div className="grid grid-cols-4 items-start gap-4">

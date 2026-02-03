@@ -18,7 +18,7 @@ public class UpdateSongDto
     public string? CoverImageUrl { get; set; }
     public string? CoverObjectKey { get; set; }
 
-    public Guid? ArtistId { get; set; }
+    public List<Guid>? ArtistIds { get; set; }
 
     public Guid? AlbumId { get; set; }
     

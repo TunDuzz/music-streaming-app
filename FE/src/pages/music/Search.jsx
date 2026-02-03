@@ -12,7 +12,7 @@ const Search = () => {
     const navigate = useNavigate();
     const { playSong, currentSong, isPlaying, pauseSong, resumeSong } = usePlayer();
 
-    const [results, setResults] = useState({ songs: [], artists: [] });
+    const [results, setResults] = useState({ songs: [], artists: [], albums: [], playlists: [] });
     const [loading, setLoading] = useState(false);
     const [genres, setGenres] = useState([]);
     const [loadingGenres, setLoadingGenres] = useState(false);
@@ -37,14 +37,14 @@ const Search = () => {
     useEffect(() => {
         const performSearch = async () => {
             if (!query.trim()) {
-                setResults({ songs: [], artists: [] });
+                setResults({ songs: [], artists: [], albums: [], playlists: [] });
                 return;
             }
 
             setLoading(true);
             try {
                 const data = await searchApi.search(query);
-                setResults(data || { songs: [], artists: [] });
+                setResults(data || { songs: [], artists: [], albums: [], playlists: [] });
             } catch (error) {
                 console.error('Search failed:', error);
             } finally {
@@ -185,7 +185,20 @@ const Search = () => {
                                             <>
                                                 <span className="text-gray-300">Bài hát</span>
                                                 <span>•</span>
-                                                <span className="text-white hover:underline">{topResult.data.artistName}</span>
+                                                <div className="flex gap-1">
+                                                    {(() => {
+                                                        const artistList = topResult.data.artists && topResult.data.artists.length > 0
+                                                            ? topResult.data.artists
+                                                            : (topResult.data.artistName || '').split(',').map(name => ({ name: name.trim() }));
+
+                                                        return artistList.map((artist, index) => (
+                                                            <span key={index}>
+                                                                <span className="text-white hover:underline cursor-pointer">{artist.name}</span>
+                                                                {index < artistList.length - 1 && <span className="text-white">, </span>}
+                                                            </span>
+                                                        ));
+                                                    })()}
+                                                </div>
                                             </>
                                         )}
                                     </div>
@@ -227,9 +240,20 @@ const Search = () => {
                                                 </div>
                                                 <div className="flex flex-col overflow-hidden">
                                                     <span className={`text-base font-medium truncate ${currentSong?.id === song.id ? 'text-green-500' : 'text-white'}`}>{song.title}</span>
-                                                    <span className="text-sm text-gray-400 truncate hover:text-white transition-colors cursor-default">
-                                                        {song.artistName}
-                                                    </span>
+                                                    <div className="text-sm text-gray-400 truncate cursor-default">
+                                                        {(() => {
+                                                            const artistList = song.artists && song.artists.length > 0
+                                                                ? song.artists
+                                                                : (song.artistName || '').split(',').map(name => ({ name: name.trim() }));
+
+                                                            return artistList.map((artist, index) => (
+                                                                <span key={index}>
+                                                                    <span className="hover:text-white transition-colors hover:underline cursor-pointer">{artist.name}</span>
+                                                                    {index < artistList.length - 1 && ", "}
+                                                                </span>
+                                                            ));
+                                                        })()}
+                                                    </div>
                                                 </div>
                                             </div>
 
@@ -257,13 +281,69 @@ const Search = () => {
                                     >
                                         <div className="relative mb-4 aspect-square">
                                             <img
-                                                src={artist.coverImageUrl}
+                                                src={artist.coverImageUrl || 'https://placehold.co/200'}
                                                 alt={artist.title}
                                                 className="w-full h-full object-cover rounded-full shadow-lg group-hover:shadow-xl transition-shadow"
                                             />
                                         </div>
                                         <h3 className="text-base font-bold text-white truncate text-center">{artist.title}</h3>
                                         <p className="text-sm text-gray-400 text-center mt-1">Nghệ sĩ</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Albums Section */}
+                    {results.albums?.length > 0 && (
+                        <div className="mt-8">
+                            <h2 className="text-2xl font-bold text-white mb-4">Album</h2>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                                {results.albums.map((album) => (
+                                    <div
+                                        key={album.id}
+                                        className="bg-[#181818] p-4 rounded-lg hover:bg-[#282828] transition-all cursor-pointer group"
+                                        onClick={() => navigate(`/album/${album.id}`)}
+                                    >
+                                        <div className="relative mb-4 aspect-square">
+                                            <img
+                                                src={album.coverImageUrl || 'https://placehold.co/200'}
+                                                alt={album.title}
+                                                className="w-full h-full object-cover rounded-md shadow-lg group-hover:shadow-xl transition-shadow"
+                                            />
+                                        </div>
+                                        <h3 className="text-base font-bold text-white truncate">{album.title}</h3>
+                                        <p className="text-sm text-gray-400 mt-1 truncate">
+                                            {album.artistName}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Playlists Section */}
+                    {results.playlists?.length > 0 && (
+                        <div className="mt-8">
+                            <h2 className="text-2xl font-bold text-white mb-4">Playlist</h2>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                                {results.playlists.map((playlist) => (
+                                    <div
+                                        key={playlist.id}
+                                        className="bg-[#181818] p-4 rounded-lg hover:bg-[#282828] transition-all cursor-pointer group"
+                                        onClick={() => navigate(`/playlist/${playlist.id}`)}
+                                    >
+                                        <div className="relative mb-4 aspect-square">
+                                            <img
+                                                src={playlist.coverImageUrl || 'https://placehold.co/200'}
+                                                alt={playlist.title}
+                                                className="w-full h-full object-cover rounded-md shadow-lg group-hover:shadow-xl transition-shadow"
+                                            />
+                                        </div>
+                                        <h3 className="text-base font-bold text-white truncate">{playlist.title}</h3>
+                                        <p className="text-sm text-gray-400 mt-1 truncate">
+                                            Của {playlist.owner}
+                                        </p>
                                     </div>
                                 ))}
                             </div>

@@ -5,7 +5,7 @@ public class Playlist : BaseEntity
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string? CoverImageUrl { get; set; }
-    public string? CoverObjectKey { get; set; } // MinIO Key
+    public string? CoverObjectKey { get; set; }
     public bool IsPublic { get; set; }
 
     public Guid UserId { get; set; }

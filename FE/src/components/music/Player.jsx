@@ -68,9 +68,20 @@ const Player = () => {
                     <span className="text-white font-medium truncate hover:underline cursor-pointer">
                         {currentSong?.title}
                     </span>
-                    <span className="text-xs text-gray-400 truncate hover:underline cursor-pointer hover:text-white">
-                        {currentSong?.artistName || currentSong?.artist}
-                    </span>
+                    <div className="text-xs text-gray-400 truncate">
+                        {(() => {
+                            const artistList = currentSong?.artists && currentSong.artists.length > 0
+                                ? currentSong.artists
+                                : (currentSong?.artistName || currentSong?.artist || '').split(',').map(name => ({ name: name.trim() }));
+
+                            return artistList.map((artist, index) => (
+                                <span key={index}>
+                                    <span className="hover:underline cursor-pointer hover:text-white">{artist.name}</span>
+                                    {index < artistList.length - 1 && ", "}
+                                </span>
+                            ));
+                        })()}
+                    </div>
                 </div>
             </div>
 

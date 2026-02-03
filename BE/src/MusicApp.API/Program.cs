@@ -3,7 +3,7 @@ using MusicApp.Application.Interfaces;
 using MusicApp.Application.Services;
 using MusicApp.Infrastructure.Data;
 using MusicApp.Infrastructure.Repositories;
-using Minio;
+
 using MusicApp.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -52,16 +52,7 @@ builder.Services.AddScoped<ISongService, SongService>();
 builder.Services.AddScoped<IPlaylistService, PlaylistService>();
 builder.Services.AddScoped<IGenreService, GenreService>(); // Added GenreService
 
-builder.Services.AddSingleton<IMinioClient>(sp =>
-{
-    var config = sp.GetRequiredService<IConfiguration>();
-    return new MinioClient()
-        .WithEndpoint(config["Minio:Endpoint"])
-        .WithCredentials(config["Minio:AccessKey"], config["Minio:SecretKey"])
-        .WithSSL(config["Minio:UseSSL"] != null && bool.Parse(config["Minio:UseSSL"]))
-        .Build();
-});
-builder.Services.AddScoped<IFileStorageService, MinioStorageService>();
+builder.Services.AddScoped<IFileStorageService, CloudinaryStorageService>();
 
 
 // JWT Configuration

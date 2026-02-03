@@ -1,5 +1,6 @@
 using MusicApp.Application.DTOs.Playlists;
 using MusicApp.Application.DTOs.Songs;
+using MusicApp.Application.DTOs.Artists;
 using MusicApp.Application.Interfaces;
 using MusicApp.Domain.Entities;
 using System.IO;
@@ -64,7 +65,8 @@ public class PlaylistService : IPlaylistService
         var bucket = "musicdb"; // Reverted to musicdb as requested
         var objectKey = $"playlist/{id}/cover_{DateTime.UtcNow.Ticks}{Path.GetExtension(fileName)}";
         
-        var url = await _fileStorageService.UploadFileAsync(fileStream, objectKey, contentType, bucket);
+        var result = await _fileStorageService.UploadFileAsync(fileStream, objectKey, contentType, bucket);
+        var url = result.Url;
         
         // Delete old if exists
         if (!string.IsNullOrEmpty(playlist.CoverObjectKey))
@@ -86,9 +88,9 @@ public class PlaylistService : IPlaylistService
 
         foreach (var playlist in playlists)
         {
-            // Note: Efficient mapping might need Eager Loading in Repo
+
             var user = await _userRepository.GetByIdAsync(playlist.UserId);
-            var songDtos = new List<SongDto>(); // Basic info, ideally loaded via repo include
+            var songDtos = new List<SongDto>();
             
             dtos.Add(new PlaylistDto
             {
@@ -99,7 +101,7 @@ public class PlaylistService : IPlaylistService
                 UserId = playlist.UserId,
                 Username = user?.Username ?? "Unknown",
                 CoverImageUrl = playlist.CoverImageUrl,
-                Songs = songDtos // Empty for now or implementation dependent
+                Songs = songDtos
             });
         }
         return dtos;
@@ -121,12 +123,16 @@ public class PlaylistService : IPlaylistService
                 { 
                     Id = s.Id, 
                     Title = s.Title,
-                    ArtistName = s.Artist?.Name ?? "Unknown",
                     CoverImageUrl = s.CoverImageUrl,
                     AudioFileUrl = s.AudioFileUrl,
                     Duration = s.Duration,
-                    ArtistId = s.ArtistId,
-                    AlbumId = s.AlbumId
+                    AlbumId = s.AlbumId,
+                    Artists = s.SongArtists.Select(sa => new SimpleArtistDto
+                    {
+                        Id = sa.ArtistId,
+                        Name = sa.Artist?.Name ?? "Unknown",
+                        IsPrimary = sa.IsPrimary
+                    }).ToList()
                 };
             })
             .ToList();
@@ -205,20 +211,7 @@ public class PlaylistService : IPlaylistService
 
     public async Task<bool> AddSongToPlaylistAsync(Guid playlistId, Guid songId)
     {
-        // This usually requires a specific method in Repo or logic here using DbContext (if accessible)
-        // or using repo methods to add relation
-        // Basic impl check existence
-        var playlist = await _playlistRepository.GetByIdAsync(playlistId);
-        if (playlist == null) return false;
-        
-        var song = await _songRepository.GetByIdAsync(songId);
-        if (song == null) return false;
 
-        // Assuming Repo has method or we manipulate entity (if EF tracking enabled)
-        // Since IRepository<T> base generic, maybe we need specific PlaylistRepo method
-        // For now, let's assume specific method exists or fail safely if not easily restorable without seeing base classes.
-        // Actually, let's check custom method availability in IPlaylistRepository.
-        // If not, we might need to add it or use specialized logic.
         
         return await _playlistRepository.AddSongAsync(playlistId, songId);
     }
@@ -226,5 +219,28 @@ public class PlaylistService : IPlaylistService
     public async Task<bool> RemoveSongFromPlaylistAsync(Guid playlistId, Guid songId)
     {
         return await _playlistRepository.RemoveSongAsync(playlistId, songId);
+    }
+
+    public async Task<IEnumerable<PlaylistDto>> SearchAsync(string query)
+    {
+        var playlists = await _playlistRepository.SearchAsync(query);
+        var dtos = new List<PlaylistDto>();
+
+        foreach (var playlist in playlists)
+        {
+            var user = await _userRepository.GetByIdAsync(playlist.UserId);
+            dtos.Add(new PlaylistDto
+            {
+                Id = playlist.Id,
+                Name = playlist.Name,
+                Description = playlist.Description,
+                IsPublic = playlist.IsPublic,
+                UserId = playlist.UserId,
+                Username = user?.Username ?? "Unknown",
+                CoverImageUrl = playlist.CoverImageUrl,
+                Songs = new List<SongDto>()
+            });
+        }
+        return dtos;
     }
 }

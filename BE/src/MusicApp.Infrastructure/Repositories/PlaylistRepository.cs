@@ -32,7 +32,8 @@ public class PlaylistRepository : Repository<Playlist>, IPlaylistRepository
             .Include(p => p.User)
             .Include(p => p.PlaylistSongs)
                 .ThenInclude(ps => ps.Song)
-                    .ThenInclude(s => s.Artist)
+                    .ThenInclude(s => s.SongArtists)
+                        .ThenInclude(sa => sa.Artist)
             .Include(p => p.PlaylistSongs)
                 .ThenInclude(ps => ps.Song)
                     .ThenInclude(s => s.Album)
@@ -78,5 +79,13 @@ public class PlaylistRepository : Repository<Playlist>, IPlaylistRepository
         _context.PlaylistSongs.Remove(playlistSong);
         await _context.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<IEnumerable<Playlist>> SearchAsync(string query)
+    {
+        return await _dbSet
+            .Where(p => p.Name.Contains(query) && p.IsPublic)
+            .Include(p => p.User)
+            .ToListAsync();
     }
 }

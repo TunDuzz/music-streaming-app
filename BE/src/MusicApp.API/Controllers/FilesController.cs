@@ -34,8 +34,8 @@ public class FilesController : ControllerBase
         try 
         {
             using var stream = file.OpenReadStream();
-            var url = await _fileStorageService.UploadFileAsync(stream, objectName, file.ContentType, bucket);
-            return Ok(new { url });
+            var result = await _fileStorageService.UploadFileAsync(stream, objectName, file.ContentType, bucket);
+            return Ok(new { url = result.Url, duration = result.Duration });
         }
         catch (Exception ex)
         {

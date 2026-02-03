@@ -22,7 +22,7 @@ public class CreateSongDto
     public string? CoverObjectKey { get; set; }
 
     [Required]
-    public Guid ArtistId { get; set; }
+    public List<Guid> ArtistIds { get; set; } = new List<Guid>();
 
     public Guid? AlbumId { get; set; }
 

@@ -15,6 +15,7 @@ public class AppDbContext : DbContext
     public DbSet<Song> Songs { get; set; }
     public DbSet<Playlist> Playlists { get; set; }
     public DbSet<PlaylistSong> PlaylistSongs { get; set; }
+    public DbSet<SongArtist> SongArtists { get; set; }
     public DbSet<Genre> Genres { get; set; }
     public DbSet<UserFollowsArtist> UserFollowsArtists { get; set; }
     public DbSet<UserLikesSong> UserLikesSongs { get; set; }
@@ -25,6 +26,9 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<PlaylistSong>()
             .HasKey(ps => new { ps.PlaylistId, ps.SongId });
+
+        modelBuilder.Entity<SongArtist>()
+            .HasKey(sa => new { sa.SongId, sa.ArtistId });
 
         modelBuilder.Entity<UserFollowsArtist>()
             .HasKey(ufa => new { ufa.UserId, ufa.ArtistId });
@@ -65,10 +69,10 @@ public class AppDbContext : DbContext
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<Artist>()
-            .HasMany(a => a.Songs)
-            .WithOne(s => s.Artist)
-            .HasForeignKey(s => s.ArtistId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .HasMany(a => a.SongArtists)
+            .WithOne(sa => sa.Artist)
+            .HasForeignKey(sa => sa.ArtistId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 
     private void ConfigureAlbumRelationships(ModelBuilder modelBuilder)
@@ -86,6 +90,12 @@ public class AppDbContext : DbContext
             .HasMany(s => s.PlaylistSongs)
             .WithOne(ps => ps.Song)
             .HasForeignKey(ps => ps.SongId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Song>()
+            .HasMany(s => s.SongArtists)
+            .WithOne(sa => sa.Song)
+            .HasForeignKey(sa => sa.SongId)
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<Song>()

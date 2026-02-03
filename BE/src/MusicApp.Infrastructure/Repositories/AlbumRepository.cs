@@ -16,4 +16,12 @@ public class AlbumRepository : Repository<Album>, IAlbumRepository
             .Include(a => a.Artist)
             .ToListAsync();
     }
+
+    public async Task<IEnumerable<Album>> SearchAsync(string query)
+    {
+        return await _dbSet
+            .Where(a => a.Title.Contains(query))
+            .Include(a => a.Artist)
+            .ToListAsync();
+    }
 }

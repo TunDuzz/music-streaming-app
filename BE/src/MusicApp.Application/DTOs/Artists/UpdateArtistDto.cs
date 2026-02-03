@@ -16,5 +16,5 @@ public class UpdateArtistDto
     [StringLength(100)]
     public string? Country { get; set; }
 
-    public string? ArtistImageObjectKeys { get; set; }
+
 }

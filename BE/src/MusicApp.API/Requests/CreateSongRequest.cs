@@ -8,9 +8,7 @@ public class CreateSongRequest
     [StringLength(200)]
     public string Title { get; set; } = string.Empty;
 
-    [Required]
-    [Range(1, 7200)]
-    public int Duration { get; set; }
+    public int Duration { get; set; } = 0;
 
     public string? Lyrics { get; set; }
 
@@ -20,7 +18,9 @@ public class CreateSongRequest
     public IFormFile? CoverFile { get; set; }
 
     [Required]
-    public Guid ArtistId { get; set; }
+    public List<Guid> ArtistIds { get; set; } = new();
 
     public Guid? AlbumId { get; set; }
+
+    public Guid? GenreId { get; set; }
 }

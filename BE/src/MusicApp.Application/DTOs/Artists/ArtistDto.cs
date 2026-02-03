@@ -8,6 +8,6 @@ public class ArtistDto : BaseDto
     public string? AvatarObjectKey { get; set; }
     public string? Country { get; set; }
     public int FollowerCount { get; set; }
-    public string? ArtistImageObjectKeys { get; set; }
+
     public List<string> ImageUrls { get; set; } = new List<string>();
 }
