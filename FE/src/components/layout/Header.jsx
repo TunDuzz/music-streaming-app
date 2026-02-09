@@ -9,12 +9,10 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger
-} from '@radix-ui/react-dropdown-menu'; // Simplified using Radix primitives directly or we can use our Shadcn port if available.
-// Actually let's use a simple relative div for dropdown if Shadcn dropdown is too complex to port in one go, but I'll try to keep it simple.
-// Wait, I installed @radix-ui/react-dropdown-menu but didn't create the component file.
-// I'll create a simple custom dropdown logic or use the Radix primitive directly.
-// Let's create a Header that uses a simple state for dropdown or just a logout button for simplicity first.
-import { LogOut, User, Shield } from 'lucide-react';
+} from '../ui/dropdown-menu';
+import { LogOut, User, Shield, Edit, Settings } from 'lucide-react';
+import { useState } from 'react';
+import EditProfileDialog from '../profile/EditProfileDialog';
 
 import SearchBar from '../music/SearchBar';
 
@@ -22,6 +20,8 @@ import SearchBar from '../music/SearchBar';
 const Header = () => {
     const { user, logout, isAdmin } = useAuth();
     const navigate = useNavigate();
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [initialTab, setInitialTab] = useState('general');
 
     return (
         <header className="h-16 bg-black/40 backdrop-blur-md flex items-center justify-between px-8 sticky top-0 z-50">
@@ -50,26 +50,46 @@ const Header = () => {
                     <span className="text-sm font-medium text-white hidden md:block">
                         {user?.displayName || user?.username}
                     </span>
-                    <div className="group relative">
-                        <Avatar className="cursor-pointer hover:ring-2 hover:ring-primary transition-all">
-                            <AvatarImage src={user?.avatarUrl} />
-                            <AvatarFallback className="bg-primary text-white font-bold">
-                                {user?.displayName?.[0] || user?.username?.[0]?.toUpperCase()}
-                            </AvatarFallback>
-                        </Avatar>
-                    </div>
 
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-gray-400 hover:text-destructive hover:bg-destructive/10 rounded-full"
-                        onClick={logout}
-                        title="Logout"
-                    >
-                        <LogOut size={20} />
-                    </Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <div className="group relative cursor-pointer">
+                                <Avatar className="hover:ring-2 hover:ring-primary transition-all">
+                                    <AvatarImage src={user?.avatarUrl} />
+                                    <AvatarFallback className="bg-primary text-white font-bold">
+                                        {user?.displayName?.[0] || user?.username?.[0]?.toUpperCase()}
+                                    </AvatarFallback>
+                                </Avatar>
+                            </div>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56 bg-[#282828] border-none text-gray-200">
+                            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                            <DropdownMenuSeparator className="bg-white/10" />
+                            <DropdownMenuItem
+                                className="cursor-pointer hover:bg-[#3E3E3E] focus:bg-[#3E3E3E]"
+                                onClick={() => { setInitialTab('general'); setIsProfileOpen(true); }}
+                            >
+                                <Settings className="mr-2 h-4 w-4" />
+                                <span>Account Settings</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator className="bg-white/10" />
+                            <DropdownMenuItem
+                                className="cursor-pointer hover:bg-[#3E3E3E] focus:bg-[#3E3E3E] text-red-400 focus:text-red-400"
+                                onClick={logout}
+                            >
+                                <LogOut className="mr-2 h-4 w-4" />
+                                <span>Log out</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </div>
+
+            <EditProfileDialog
+                isOpen={isProfileOpen}
+                onOpenChange={setIsProfileOpen}
+                initialTab={initialTab}
+            />
         </header>
     );
 };

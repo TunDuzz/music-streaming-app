@@ -165,4 +165,26 @@ public class SongsController : ControllerBase
         var songs = await _songService.SearchAsync(q);
         return Ok(songs);
     }
+
+    [HttpPost("{id}/like")]
+    [Authorize]
+    public async Task<IActionResult> ToggleLike(Guid id)
+    {
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (userId == null) return Unauthorized();
+
+        var isLiked = await _songService.ToggleLikeAsync(id, Guid.Parse(userId));
+        return Ok(new { isLiked });
+    }
+
+    [HttpGet("liked")]
+    [Authorize]
+    public async Task<ActionResult<IEnumerable<Guid>>> GetLikedSongIds()
+    {
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (userId == null) return Unauthorized();
+
+        var likedIds = await _songService.GetLikedSongIdsAsync(Guid.Parse(userId));
+        return Ok(likedIds);
+    }
 }

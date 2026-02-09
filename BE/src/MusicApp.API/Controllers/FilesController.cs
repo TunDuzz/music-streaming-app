@@ -16,7 +16,8 @@ public class FilesController : ControllerBase
     }
 
     [HttpPost("upload")]
-    [Authorize(Roles = "Admin")]
+    [HttpPost("upload")]
+    [Authorize]
     public async Task<IActionResult> Upload(IFormFile file, [FromQuery] string bucket = "musicdb")
     {
         if (file == null || file.Length == 0)

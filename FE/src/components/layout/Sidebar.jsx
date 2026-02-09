@@ -245,13 +245,20 @@ const Sidebar = () => {
                     </DialogContent>
                 </Dialog>
 
-                <Button
-                    variant="ghost"
-                    className="w-full justify-start gap-4 text-base font-medium text-gray-400 hover:text-white hover:bg-white/5 h-12"
-                >
-                    <Heart size={24} className="text-purple-400" />
-                    Liked Songs
-                </Button>
+                <Link to="/app/playlist/liked">
+                    <Button
+                        variant="ghost"
+                        className={cn(
+                            "w-full justify-start gap-4 text-base font-medium h-12",
+                            isActive('/app/playlist/liked')
+                                ? "bg-white/10 text-white hover:bg-white/10"
+                                : "text-gray-400 hover:text-white hover:bg-white/5"
+                        )}
+                    >
+                        <Heart size={24} className="text-purple-400" />
+                        Liked Songs
+                    </Button>
+                </Link>
             </div>
 
             {/* Scrollable Playlist List */}
@@ -269,7 +276,7 @@ const Sidebar = () => {
                                     isActive(`/app/playlist/${playlist.id}`) && "text-white bg-white/10"
                                 )}
                             >
-                                <div className="w-12 h-12 min-w-12 bg-[#333] rounded flex items-center justify-center overflow-hidden shadow-sm">
+                                <div className="w-12 h-12 min-w-12 bg-[#333] rounded flex items-center justify-center overflow-hidden shadow-sm flex-shrink-0">
                                     {playlist.coverImageUrl ? (
                                         <img
                                             src={`${playlist.coverImageUrl}?t=${new Date().getTime()}`}

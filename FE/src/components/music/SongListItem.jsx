@@ -1,11 +1,20 @@
-import { Play, Pause, Heart, Clock } from 'lucide-react';
+import { Play, Pause, MoreHorizontal, Heart } from 'lucide-react';
 import { usePlayer } from '../../contexts/PlayerContext';
 import { cn } from '../../lib/utils';
 import { Button } from '../ui/button';
 import { formatDuration } from '../../lib/api';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "../../components/ui/dropdown-menu";
 
 const SongListItem = ({ song, index }) => {
-    const { playSong, currentSong, isPlaying } = usePlayer();
+    const { playSong, currentSong, isPlaying, toggleLike, likedSongIds } = usePlayer();
+
+    const isLiked = likedSongIds.has(song.id);
+
     const isCurrent = currentSong?.id === song.id;
 
     return (
@@ -60,12 +69,32 @@ const SongListItem = ({ song, index }) => {
 
             {/* Actions */}
             <div className="flex items-center gap-4 justify-end">
-                <Button variant="ghost" size="icon" className="hidden group-hover:flex h-8 w-8 text-gray-400 hover:text-white">
-                    <Heart size={16} />
-                </Button>
                 <span className="text-sm text-gray-400 font-mono w-10 text-right">
                     {formatDuration(song.duration)}
                 </span>
+
+                <div onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 text-gray-400 hover:text-white hover:bg-transparent opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 transition-opacity"
+                            >
+                                <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-[#282828] border-none text-gray-200 z-50">
+                            <DropdownMenuItem
+                                onClick={() => toggleLike(song.id)}
+                                className="hover:bg-[#3E3E3E] cursor-pointer"
+                            >
+                                <Heart className={`w-4 h-4 mr-2 ${isLiked ? 'fill-green-500 text-green-500' : ''}`} />
+                                {isLiked ? 'Xóa khỏi danh sách yêu thích' : 'Thêm vào danh sách yêu thích'}
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
             </div>
         </div>
     );

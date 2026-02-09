@@ -10,7 +10,7 @@ const AddToPlaylistDialog = ({ song, children, isOpen, onOpenChange }) => {
     const [loading, setLoading] = useState(false);
     const [creating, setCreating] = useState(false);
     const [newPlaylistName, setNewPlaylistName] = useState('');
-    const [addedMap, setAddedMap] = useState({}); // Track which playlists contain this song
+    const [addedMap, setAddedMap] = useState({}); // Track which playlists contain this song locally
 
     useEffect(() => {
         if (isOpen) {
@@ -23,8 +23,6 @@ const AddToPlaylistDialog = ({ song, children, isOpen, onOpenChange }) => {
         try {
             const data = await playlistsApi.getMyPlaylists();
             setPlaylists(data || []);
-            // Ideally backend tells us if song is in playlist, or we check if we have full details
-            // For now, simpler implementation: just show list
         } catch (error) {
             console.error('Failed to fetch playlists:', error);
         } finally {
@@ -40,8 +38,12 @@ const AddToPlaylistDialog = ({ song, children, isOpen, onOpenChange }) => {
                 name: newPlaylistName,
                 isPublic: false
             });
-            setPlaylists([newPlaylist, ...playlists]);
+            // The new playlist won't have the song yet, but we'll add it immediately
+            const playlistWithSongs = { ...newPlaylist, songIds: [] };
+
+            setPlaylists([playlistWithSongs, ...playlists]);
             setNewPlaylistName('');
+
             // Automatically add song to new playlist
             if (song) {
                 await addToPlaylist(newPlaylist.id);
@@ -56,8 +58,20 @@ const AddToPlaylistDialog = ({ song, children, isOpen, onOpenChange }) => {
     const addToPlaylist = async (playlistId) => {
         try {
             await playlistsApi.addSong(playlistId, song.id);
+            // Update local added map for immediate feedback
             setAddedMap(prev => ({ ...prev, [playlistId]: true }));
-            // Optional: Show toast success
+
+            // Also update the playlists state to reflect the change if we re-open without fetching
+            setPlaylists(prev => prev.map(p => {
+                if (p.id === playlistId) {
+                    const currentSongIds = p.songIds || [];
+                    if (!currentSongIds.includes(song.id)) {
+                        return { ...p, songIds: [...currentSongIds, song.id] };
+                    }
+                }
+                return p;
+            }));
+
         } catch (error) {
             console.error('Failed to add song:', error);
         }
@@ -65,9 +79,11 @@ const AddToPlaylistDialog = ({ song, children, isOpen, onOpenChange }) => {
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogTrigger asChild>
-                {children}
-            </DialogTrigger>
+            {children && (
+                <DialogTrigger asChild>
+                    {children}
+                </DialogTrigger>
+            )}
             <DialogContent className="sm:max-w-[425px] bg-[#282828] text-white border-none">
                 <DialogHeader>
                     <DialogTitle>Add to Playlist</DialogTitle>
@@ -101,26 +117,35 @@ const AddToPlaylistDialog = ({ song, children, isOpen, onOpenChange }) => {
                                 No playlists found.
                             </div>
                         ) : (
-                            playlists.map((playlist) => (
-                                <div
-                                    key={playlist.id}
-                                    className="flex items-center justify-between p-3 hover:bg-[#3E3E3E] rounded-md group cursor-pointer transition-colors"
-                                    onClick={() => addToPlaylist(playlist.id)}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-[#181818] flex items-center justify-center rounded">
-                                            <Music className="w-5 h-5 text-gray-400" />
+                            playlists.map((playlist) => {
+                                // Check if song is in playlist via API data (songIds) or local action (addedMap)
+                                const isAdded = addedMap[playlist.id] || (playlist.songIds && playlist.songIds.includes(song?.id));
+
+                                return (
+                                    <div
+                                        key={playlist.id}
+                                        className={`flex items-center justify-between p-3 rounded-md group transition-colors ${isAdded ? 'opacity-70 cursor-default' : 'hover:bg-[#3E3E3E] cursor-pointer'}`}
+                                        onClick={() => !isAdded && addToPlaylist(playlist.id)}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-[#181818] flex items-center justify-center rounded overflow-hidden flex-shrink-0">
+                                                {playlist.coverImageUrl ? (
+                                                    <img src={playlist.coverImageUrl} alt={playlist.name} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <Music className="w-5 h-5 text-gray-400" />
+                                                )}
+                                            </div>
+                                            <div>
+                                                <p className="font-medium truncate max-w-[200px]">{playlist.name}</p>
+                                                <p className="text-xs text-gray-400">{playlist.songIds?.length || 0} songs</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="font-medium truncate max-w-[200px]">{playlist.name}</p>
-                                            <p className="text-xs text-gray-400">{playlist.songs?.length || 0} songs</p>
-                                        </div>
+                                        {isAdded && (
+                                            <Check className="w-5 h-5 text-green-500" />
+                                        )}
                                     </div>
-                                    {addedMap[playlist.id] && (
-                                        <Check className="w-5 h-5 text-green-500" />
-                                    )}
-                                </div>
-                            ))
+                                );
+                            })
                         )}
                     </div>
                 </div>

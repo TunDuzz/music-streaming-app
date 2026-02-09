@@ -15,10 +15,24 @@ public class ArtistRepository : Repository<Artist>, IArtistRepository
             .Where(a => a.Name.Contains(name))
             .ToListAsync();
 
-        // Sort in memory to prioritize "Starts With"
         return artists
             .OrderByDescending(a => a.Name.StartsWith(name, StringComparison.OrdinalIgnoreCase))
             .ThenBy(a => a.Name)
             .ToList();
+    }
+
+    public async Task<Artist?> GetByIdWithDetailsAsync(Guid id)
+    {
+        return await _dbSet
+            .Where(a => a.Id == id)
+            .Include(a => a.Albums)
+            .Include(a => a.SongArtists)
+                .ThenInclude(sa => sa.Song)
+                    .ThenInclude(s => s.Album)
+            .Include(a => a.SongArtists)
+                .ThenInclude(sa => sa.Song)
+                    .ThenInclude(s => s.SongArtists)
+                        .ThenInclude(sa => sa.Artist)
+            .FirstOrDefaultAsync();
     }
 }

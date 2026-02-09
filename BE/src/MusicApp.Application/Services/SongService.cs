@@ -190,6 +190,16 @@ public class SongService : ISongService
         return dtos;
     }
 
+    public async Task<bool> ToggleLikeAsync(Guid songId, Guid userId)
+    {
+        return await _songRepository.ToggleLikeAsync(songId, userId);
+    }
+
+    public async Task<IEnumerable<Guid>> GetLikedSongIdsAsync(Guid userId)
+    {
+        return await _songRepository.GetLikedSongIdsAsync(userId);
+    }
+
     // Helper to safely load relations if needed and map
     private async Task<SongDto> LoadAndMapSong(Song song)
     {

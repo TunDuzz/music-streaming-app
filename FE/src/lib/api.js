@@ -99,6 +99,21 @@ export const songsApi = {
             headers: getHeaders(),
         });
         return handleResponseSafe(response);
+    },
+
+    toggleLike: async (id) => {
+        const response = await fetch(`${API_BASE_URL}/Songs/${id}/like`, {
+            method: 'POST',
+            headers: getHeaders(),
+        });
+        return handleResponseSafe(response);
+    },
+
+    getLikedIds: async () => {
+        const response = await fetch(`${API_BASE_URL}/Songs/liked`, {
+            headers: getHeaders(),
+        });
+        return handleResponseSafe(response);
     }
 };
 
@@ -299,6 +314,12 @@ export const authApi = {
 export const playlistsApi = {
     getAll: async () => {
         const response = await fetch(`${API_BASE_URL}/Playlist`, { // Updated to match likely Controller Route
+            headers: getHeaders(),
+        });
+        return handleResponseSafe(response);
+    },
+    getLiked: async () => {
+        const response = await fetch(`${API_BASE_URL}/Playlist/liked`, {
             headers: getHeaders(),
         });
         return handleResponseSafe(response);

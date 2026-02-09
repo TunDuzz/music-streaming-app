@@ -24,4 +24,14 @@ public class AlbumRepository : Repository<Album>, IAlbumRepository
             .Include(a => a.Artist)
             .ToListAsync();
     }
+
+    public async Task<Album?> GetByIdWithSongsAsync(Guid id)
+    {
+        return await _dbSet
+            .Include(a => a.Artist)
+            .Include(a => a.Songs)
+                .ThenInclude(s => s.SongArtists)
+                    .ThenInclude(sa => sa.Artist)
+            .FirstOrDefaultAsync(a => a.Id == id);
+    }
 }

@@ -10,4 +10,5 @@ public class AlbumDto : BaseDto
     public Guid ArtistId { get; set; }
     public string ArtistName { get; set; } = string.Empty;
     public string Type { get; set; } = "Album";
+    public IEnumerable<MusicApp.Application.DTOs.Songs.SongDto> Songs { get; set; } = new List<MusicApp.Application.DTOs.Songs.SongDto>();
 }

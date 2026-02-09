@@ -10,4 +10,7 @@ public class ArtistDto : BaseDto
     public int FollowerCount { get; set; }
 
     public List<string> ImageUrls { get; set; } = new List<string>();
+
+    public List<MusicApp.Application.DTOs.Songs.SongDto> Songs { get; set; } = new List<MusicApp.Application.DTOs.Songs.SongDto>();
+    public List<MusicApp.Application.DTOs.Albums.AlbumDto> Albums { get; set; } = new List<MusicApp.Application.DTOs.Albums.AlbumDto>();
 }

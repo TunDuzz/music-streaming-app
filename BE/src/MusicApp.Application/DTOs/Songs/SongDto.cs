@@ -17,4 +17,5 @@ public class SongDto : BaseDto
     public string? AlbumTitle { get; set; }
     public Guid? GenreId { get; set; }
     public string? GenreName { get; set; }
+    public DateTime? AddedAt { get; set; }
 }

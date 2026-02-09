@@ -2,6 +2,7 @@
 import { AuthProvider } from './contexts/AuthContext';
 import { PlayerProvider } from './contexts/PlayerContext';
 
+
 // Shared
 import PrivateRoute from './components/shared/PrivateRoute';
 import AdminRoute from './components/shared/AdminRoute';
@@ -20,6 +21,8 @@ import Home from './pages/music/Home';
 import Search from './pages/music/Search';
 import Library from './pages/music/Library';
 import PlaylistDetail from './pages/playlist/PlaylistDetail';
+import AlbumDetail from './pages/album/AlbumDetail';
+import ArtistDetail from './pages/artist/ArtistDetail';
 
 // Admin pages
 import Dashboard from './pages/admin/Dashboard';
@@ -50,6 +53,8 @@ function App() {
                     <Route path="/search" element={<Search />} />
                     <Route path="/library" element={<Library />} />
                     <Route path="/playlist/:id" element={<PlaylistDetail />} />
+                    <Route path="/album/:id" element={<AlbumDetail />} />
+                    <Route path="/artist/:id" element={<ArtistDetail />} />
                     <Route path="*" element={<Navigate to="/app" replace />} />
                   </Routes>
                 </AppLayout>

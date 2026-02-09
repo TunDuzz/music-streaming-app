@@ -14,6 +14,7 @@ public class PlaylistRepository : Repository<Playlist>, IPlaylistRepository
         return await _dbSet
             .Where(p => p.UserId == userId)
             .Include(p => p.User)
+            .Include(p => p.PlaylistSongs) 
             .ToListAsync();
     }
 

@@ -20,8 +20,44 @@ public class ArtistService : IArtistService
 
     public async Task<ArtistDto?> GetByIdAsync(Guid id)
     {
-        var artist = await _artistRepository.GetByIdAsync(id);
-        return artist == null ? null : MapToDto(artist);
+        var artist = await _artistRepository.GetByIdWithDetailsAsync(id);
+        if (artist == null) return null;
+        
+        var dto = MapToDto(artist);
+        
+        // Map Albums
+        dto.Albums = artist.Albums.Select(a => new MusicApp.Application.DTOs.Albums.AlbumDto
+        {
+            Id = a.Id,
+            Title = a.Title,
+            ReleaseDate = a.ReleaseDate,
+            CoverImageUrl = a.CoverImageUrl,
+            ArtistId = a.ArtistId,
+            ArtistName = artist.Name,
+            Type = a.Type.ToString()
+        }).ToList();
+
+        // Map Songs (from SongArtists)
+        // Filter to ensure we don't have duplicates if data is weird, though implicit it shouldn't be.
+        // Also prioritize songs where this artist is Primary? Design didn't specify, but usually we show all.
+        dto.Songs = artist.SongArtists.Select(sa => sa.Song).Select(s => new MusicApp.Application.DTOs.Songs.SongDto
+        {
+            Id = s.Id,
+            Title = s.Title,
+            Duration = s.Duration,
+            CoverImageUrl = s.CoverImageUrl,
+            AudioFileUrl = s.AudioFileUrl,
+            AlbumId = s.AlbumId,
+            AlbumTitle = s.Album?.Title,
+            Artists = s.SongArtists.Select(x => new SimpleArtistDto
+            {
+                Id = x.ArtistId,
+                Name = x.Artist.Name,
+                IsPrimary = x.IsPrimary
+            }).ToList()
+        }).ToList();
+
+        return dto;
     }
 
     public async Task<IEnumerable<ArtistDto>> GetAllAsync()

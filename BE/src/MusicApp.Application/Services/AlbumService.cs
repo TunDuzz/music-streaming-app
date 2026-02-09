@@ -41,10 +41,36 @@ public class AlbumService : IAlbumService
 
     public async Task<AlbumDto?> GetByIdAsync(Guid id)
     {
-        var album = await _albumRepository.GetByIdAsync(id);
+        var album = await _albumRepository.GetByIdWithSongsAsync(id); // Use new method
         if (album == null) return null;
 
         var artist = await _artistRepository.GetByIdAsync(album.ArtistId);
+        
+        // Map Songs to SongDto
+        var songDtos = album.Songs.Select(song => new MusicApp.Application.DTOs.Songs.SongDto
+        {
+            Id = song.Id,
+            Title = song.Title,
+            Duration = song.Duration,
+            Lyrics = song.Lyrics,
+            AudioFileUrl = song.AudioFileUrl,
+            CoverImageUrl = song.CoverImageUrl,
+            PlayCount = song.PlayCount,
+            LikeCount = song.LikeCount,
+            CreatedAt = song.CreatedAt,
+            ArtistName = string.Join(", ", song.SongArtists.Where(sa => sa.IsPrimary).Select(sa => sa.Artist.Name)), // Primary artists or all? Let's use all for simple display or primary. 
+                                                                                                                    // Actually let's replicate logic: join names.
+            Artists = song.SongArtists.Select(sa => new MusicApp.Application.DTOs.Artists.SimpleArtistDto 
+            { 
+                Id = sa.ArtistId, 
+                Name = sa.Artist.Name, 
+                IsPrimary = sa.IsPrimary 
+            }).ToList(),
+            AlbumId = song.AlbumId,
+            AlbumTitle = album.Title,
+            GenreId = song.GenreId
+        }).ToList();
+
         return new AlbumDto
         {
             Id = album.Id,
@@ -53,7 +79,8 @@ public class AlbumService : IAlbumService
             CoverImageUrl = album.CoverImageUrl,
             ArtistId = album.ArtistId,
             ArtistName = artist?.Name ?? "Unknown",
-            Type = album.Type.ToString()
+            Type = album.Type.ToString(),
+            Songs = songDtos
         };
     }
 

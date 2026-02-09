@@ -62,7 +62,7 @@ public class PlaylistService : IPlaylistService
         var playlist = await _playlistRepository.GetByIdAsync(id);
         if (playlist == null) throw new KeyNotFoundException("Playlist not found");
 
-        var bucket = "musicdb"; // Reverted to musicdb as requested
+        var bucket = "Playlist"; // Reverted to musicdb as requested
         var objectKey = $"playlist/{id}/cover_{DateTime.UtcNow.Ticks}{Path.GetExtension(fileName)}";
         
         var result = await _fileStorageService.UploadFileAsync(fileStream, objectKey, contentType, bucket);
@@ -127,6 +127,8 @@ public class PlaylistService : IPlaylistService
                     AudioFileUrl = s.AudioFileUrl,
                     Duration = s.Duration,
                     AlbumId = s.AlbumId,
+                    AlbumTitle = s.Album?.Title,
+                    AddedAt = ps.AddedAt, // Populate correctly
                     Artists = s.SongArtists.Select(sa => new SimpleArtistDto
                     {
                         Id = sa.ArtistId,
@@ -167,7 +169,8 @@ public class PlaylistService : IPlaylistService
                 UserId = playlist.UserId,
                 Username = user?.Username ?? "Unknown",
                 CoverImageUrl = playlist.CoverImageUrl,
-                Songs = new List<SongDto>()
+                Songs = new List<SongDto>(),
+                SongIds = playlist.PlaylistSongs.Select(ps => ps.SongId).ToList()
             });
         }
         return dtos;
@@ -242,5 +245,50 @@ public class PlaylistService : IPlaylistService
             });
         }
         return dtos;
+    }
+
+    public async Task<PlaylistDto> GetLikedSongsPlaylistAsync(Guid userId)
+    {
+        var likedSongs = await _songRepository.GetLikedSongsWithTimestampAsync(userId);
+        var user = await _userRepository.GetByIdAsync(userId);
+        
+        var songDtos = new List<SongDto>();
+        
+        foreach(var item in likedSongs)
+        {
+             var s = item.Song;
+             songDtos.Add(new SongDto 
+                { 
+                    Id = s.Id, 
+                    Title = s.Title,
+                    CoverImageUrl = s.CoverImageUrl,
+                    AudioFileUrl = s.AudioFileUrl,
+                    Duration = s.Duration,
+                    AlbumId = s.AlbumId,
+                    AlbumTitle = s.Album?.Title ?? "Unknown",
+                    AddedAt = item.LikedAt,
+                    
+                    Artists = s.SongArtists.Select(sa => new SimpleArtistDto
+                    {
+                        Id = sa.ArtistId,
+                        Name = sa.Artist?.Name ?? "Unknown",
+                        IsPrimary = sa.IsPrimary
+                    }).ToList()
+                });
+        }
+
+        return new PlaylistDto
+        {
+            Id = Guid.Empty, // Fixed ID for checking on FE
+            Name = "Liked Songs",
+            Description = "Your collection of liked songs",
+            IsPublic = false,
+            IsFixed = true,
+            UserId = userId,
+            Username = user?.Username ?? "Unknown",
+            CoverImageUrl = null, // Fixed cover on FE
+            Songs = songDtos,
+            SongCount = songDtos.Count
+        };
     }
 }

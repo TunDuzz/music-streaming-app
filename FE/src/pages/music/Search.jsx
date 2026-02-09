@@ -1,7 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { searchApi, genresApi } from '../../lib/api'; // Use generic searchApi
-import { Loader2, Play, Pause, MoreHorizontal } from 'lucide-react';
+import { Loader2, Play, Pause, MoreHorizontal, Music, Heart } from 'lucide-react';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "../../components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import { Button } from '../../components/ui/button';
 import { usePlayer } from '../../contexts/PlayerContext';
@@ -10,7 +16,7 @@ const Search = () => {
     const [searchParams] = useSearchParams();
     const query = searchParams.get('q') || '';
     const navigate = useNavigate();
-    const { playSong, currentSong, isPlaying, pauseSong, resumeSong } = usePlayer();
+    const { playSong, currentSong, isPlaying, pauseSong, resumeSong, toggleLike, likedSongIds } = usePlayer();
 
     const [results, setResults] = useState({ songs: [], artists: [], albums: [], playlists: [] });
     const [loading, setLoading] = useState(false);
@@ -193,7 +199,19 @@ const Search = () => {
 
                                                         return artistList.map((artist, index) => (
                                                             <span key={index}>
-                                                                <span className="text-white hover:underline cursor-pointer">{artist.name}</span>
+                                                                {artist.id ? (
+                                                                    <span
+                                                                        className="text-white hover:underline cursor-pointer"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            navigate(`/app/artist/${artist.id}`);
+                                                                        }}
+                                                                    >
+                                                                        {artist.name}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="text-white">{artist.name}</span>
+                                                                )}
                                                                 {index < artistList.length - 1 && <span className="text-white">, </span>}
                                                             </span>
                                                         ));
@@ -248,7 +266,19 @@ const Search = () => {
 
                                                             return artistList.map((artist, index) => (
                                                                 <span key={index}>
-                                                                    <span className="hover:text-white transition-colors hover:underline cursor-pointer">{artist.name}</span>
+                                                                    {artist.id ? (
+                                                                        <span
+                                                                            className="hover:text-white transition-colors hover:underline cursor-pointer"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                navigate(`/app/artist/${artist.id}`);
+                                                                            }}
+                                                                        >
+                                                                            {artist.name}
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span>{artist.name}</span>
+                                                                    )}
                                                                     {index < artistList.length - 1 && ", "}
                                                                 </span>
                                                             ));
@@ -259,7 +289,24 @@ const Search = () => {
 
                                             <div className="flex items-center gap-4 text-sm text-gray-400">
                                                 <span className="hidden sm:block">{song.duration ? `${Math.floor(song.duration / 60)}:${Math.floor(song.duration % 60).toString().padStart(2, '0')}` : '0:00'}</span>
-                                                <Button size="icon" variant="ghost" className="h-8 w-8 hover:text-white"><MoreHorizontal size={16} /></Button>
+                                                <div onClick={(e) => e.stopPropagation()}>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button size="icon" variant="ghost" className="h-8 w-8 hover:text-white">
+                                                                <MoreHorizontal size={16} />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end" className="bg-[#282828] border-none text-gray-200 z-50">
+                                                            <DropdownMenuItem
+                                                                onClick={() => toggleLike(song.id)}
+                                                                className="hover:bg-[#3E3E3E] cursor-pointer"
+                                                            >
+                                                                <Heart className={`w-4 h-4 mr-2 ${likedSongIds.has(song.id) ? 'fill-green-500 text-green-500' : ''}`} />
+                                                                {likedSongIds.has(song.id) ? 'Xóa khỏi danh sách yêu thích' : 'Thêm vào danh sách yêu thích'}
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
                                             </div>
                                         </div>
                                     ))}
@@ -276,8 +323,8 @@ const Search = () => {
                                 {results.artists.map((artist) => (
                                     <div
                                         key={artist.id}
-                                        className="bg-[#181818] p-4 rounded-lg hover:bg-[#282828] transition-all cursor-default group"
-                                    // onClick={() => navigate(`/artist/${artist.id}`)}
+                                        className="bg-[#181818] p-4 rounded-lg hover:bg-[#282828] transition-all cursor-pointer group"
+                                        onClick={() => navigate(`/app/artist/${artist.id}`)}
                                     >
                                         <div className="relative mb-4 aspect-square">
                                             <img
@@ -303,7 +350,7 @@ const Search = () => {
                                     <div
                                         key={album.id}
                                         className="bg-[#181818] p-4 rounded-lg hover:bg-[#282828] transition-all cursor-pointer group"
-                                        onClick={() => navigate(`/album/${album.id}`)}
+                                        onClick={() => navigate(`/app/album/${album.id}`)}
                                     >
                                         <div className="relative mb-4 aspect-square">
                                             <img
@@ -331,14 +378,20 @@ const Search = () => {
                                     <div
                                         key={playlist.id}
                                         className="bg-[#181818] p-4 rounded-lg hover:bg-[#282828] transition-all cursor-pointer group"
-                                        onClick={() => navigate(`/playlist/${playlist.id}`)}
+                                        onClick={() => navigate(`/app/playlist/${playlist.id}`)}
                                     >
                                         <div className="relative mb-4 aspect-square">
-                                            <img
-                                                src={playlist.coverImageUrl || 'https://placehold.co/200'}
-                                                alt={playlist.title}
-                                                className="w-full h-full object-cover rounded-md shadow-lg group-hover:shadow-xl transition-shadow"
-                                            />
+                                            {playlist.coverImageUrl ? (
+                                                <img
+                                                    src={playlist.coverImageUrl}
+                                                    alt={playlist.title}
+                                                    className="w-full h-full object-cover rounded-md shadow-lg group-hover:shadow-xl transition-shadow"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center rounded-md shadow-lg group-hover:shadow-xl transition-shadow">
+                                                    <Music className="w-1/3 h-1/3 text-gray-500" />
+                                                </div>
+                                            )}
                                         </div>
                                         <h3 className="text-base font-bold text-white truncate">{playlist.title}</h3>
                                         <p className="text-sm text-gray-400 mt-1 truncate">

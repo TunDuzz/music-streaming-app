@@ -14,4 +14,5 @@ public interface IPlaylistService
     Task<bool> RemoveSongFromPlaylistAsync(Guid playlistId, Guid songId);
     Task<string> UploadCoverImageAsync(Guid id, System.IO.Stream fileStream, string fileName, string contentType);
     Task<IEnumerable<PlaylistDto>> SearchAsync(string query);
+    Task<PlaylistDto> GetLikedSongsPlaylistAsync(Guid userId);
 }

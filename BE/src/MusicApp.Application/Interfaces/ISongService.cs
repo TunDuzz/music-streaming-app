@@ -11,4 +11,6 @@ public interface ISongService
     Task<SongDto?> UpdateAsync(Guid id, UpdateSongDto dto);
     Task<bool> DeleteAsync(Guid id);
     Task<IEnumerable<SongDto>> SearchAsync(string query);
+    Task<bool> ToggleLikeAsync(Guid songId, Guid userId);
+    Task<IEnumerable<Guid>> GetLikedSongIdsAsync(Guid userId);
 }

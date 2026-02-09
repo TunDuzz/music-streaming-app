@@ -121,4 +121,16 @@ public class PlaylistController : ControllerBase
              return BadRequest(ex.Message);
         }
     }
+
+
+    [HttpGet("liked")]
+    [Authorize]
+    public async Task<IActionResult> GetLikedSongsPlaylist()
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userId == null) return Unauthorized();
+
+        var playlist = await _playlistService.GetLikedSongsPlaylistAsync(Guid.Parse(userId));
+        return Ok(playlist);
+    }
 }
