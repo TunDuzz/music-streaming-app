@@ -74,7 +74,19 @@ public class UserService : IUserService
             user.AvatarUrl = dto.AvatarUrl;
 
         if (!string.IsNullOrEmpty(dto.Password))
+        {
+            if (string.IsNullOrEmpty(dto.CurrentPassword))
+            {
+                throw new InvalidOperationException("Current password is required to set a new password.");
+            }
+
+            if (!BCrypt.Net.BCrypt.Verify(dto.CurrentPassword, user.PasswordHash))
+            {
+                throw new InvalidOperationException("Current password is incorrect.");
+            }
+
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+        }
 
         if (!string.IsNullOrEmpty(dto.Role) && Enum.TryParse<UserRole>(dto.Role, true, out var role))
         {
