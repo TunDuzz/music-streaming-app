@@ -15,6 +15,8 @@ public class UpdateUserDto
 
     public string? AvatarUrl { get; set; }
 
+    public string? CurrentPassword { get; set; }
+
     [StringLength(100, MinimumLength = 6)]
     public string? Password { get; set; }
 
