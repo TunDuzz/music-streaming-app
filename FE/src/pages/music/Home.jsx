@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { songsApi, albumsApi, playlistsApi, artistsApi } from '../../lib/api';
 import SongCard from '../../components/music/SongCard';
 import AlbumCard from '../../components/music/AlbumCard';
 import PlaylistCard from '../../components/music/PlaylistCard';
 import ArtistCard from '../../components/music/ArtistCard';
-import { Loader2 } from 'lucide-react';
+import FeaturedHero from '../../components/music/FeaturedHero';
+import { Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 const Home = () => {
@@ -28,7 +29,7 @@ const Home = () => {
                 const [songsData, albumsData, playlistsData, artistsData] = await Promise.all([
                     songsApi.getAll(),
                     albumsApi.getAll(),
-                    playlistsApi.getAll(), // Assuming this returns public playlists or similar
+                    playlistsApi.getAll(),
                     artistsApi.getAll()
                 ]);
 
@@ -54,81 +55,132 @@ const Home = () => {
         );
     }
 
-    // Reuse Section Component
-    const Section = ({ title, children }) => (
-        <section className="space-y-4">
-            <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-white hover:underline cursor-pointer">
-                    {title}
-                </h2>
-                <span className="text-sm font-bold text-gray-400 hover:underline cursor-pointer tracking-wider">
-                    SEE ALL
-                </span>
+    // Carousel Section Component with lateral controls
+    const Section = ({ title, children, onViewAll }) => {
+        const scrollContainerRef = useRef(null);
+
+        const scroll = (direction) => {
+            if (scrollContainerRef.current) {
+                const { current } = scrollContainerRef;
+                const scrollAmount = current.offsetWidth * 0.75; // Scroll 75% of view width
+                current.scrollBy({ left: direction === 'left' ? -scrollAmount : scrollAmount, behavior: 'smooth' });
+            }
+        };
+
+        return (
+            <section className="space-y-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100 group/section">
+                <div className="flex items-center justify-between px-2">
+                    <h2 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+                        <span className="w-1 h-6 bg-indigo-500 rounded-full block"></span>
+                        {title}
+                    </h2>
+
+                    {onViewAll && (
+                        <button
+                            onClick={onViewAll}
+                            className="text-[10px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-widest hover:underline decoration-indigo-500 decoration-2 underline-offset-4"
+                        >
+                            View All
+                        </button>
+                    )}
+                </div>
+
+                {/* Horizontal Scroll Container */}
+                <div className="relative group/carousel">
+
+                    {/* Left Button - Absolute Positioned */}
+                    <button
+                        onClick={() => scroll('left')}
+                        className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-12 h-12 flex items-center justify-center rounded-full bg-black/50 hover:bg-black/80 text-white backdrop-blur-md border border-white/10 opacity-0 group-hover/carousel:opacity-100 transition-all duration-300 hover:scale-110 disabled:opacity-0 -ml-4 md:ml-0 shadow-xl"
+                        aria-label="Scroll left"
+                    >
+                        <ChevronLeft className="w-8 h-8" />
+                    </button>
+
+                    <div
+                        ref={scrollContainerRef}
+                        className="flex overflow-x-auto gap-6 pb-4 px-1 snap-x scrollbar-none scroll-smooth"
+                    >
+                        {children}
+                    </div>
+
+                    {/* Right Button - Absolute Positioned */}
+                    <button
+                        onClick={() => scroll('right')}
+                        className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-12 h-12 flex items-center justify-center rounded-full bg-black/50 hover:bg-black/80 text-white backdrop-blur-md border border-white/10 opacity-0 group-hover/carousel:opacity-100 transition-all duration-300 hover:scale-110 -mr-4 md:mr-0 shadow-xl"
+                        aria-label="Scroll right"
+                    >
+                        <ChevronRight className="w-8 h-8" />
+                    </button>
+
+                    {/* Fade edges */}
+                    <div className="absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-black via-black/50 to-transparent pointer-events-none z-10" />
+                    <div className="absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-black via-black/50 to-transparent pointer-events-none z-10" />
+                </div>
+            </section>
+        );
+    };
+
+    // Grid Section for "Browse All" feeling
+    const GridSection = ({ title, children }) => (
+        <section className="space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
+            <div className="flex items-center gap-2 px-2 border-b border-white/10 pb-4">
+                <h2 className="text-2xl font-bold text-white tracking-tight">{title}</h2>
             </div>
-            {children}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
+                {children}
+            </div>
         </section>
     );
 
+    const featuredItem = songs.length > 0 ? songs[Math.floor(Math.random() * songs.length)] : null;
+    const featuredType = 'song';
+
     return (
-        <div className="space-y-12 pb-10">
-            <h1 className="text-3xl font-bold text-white mb-6">
-                {getGreeting()}, {user?.displayName || user?.username}
-            </h1>
+        <div className="p-6 space-y-10 pb-24 overflow-x-hidden">
+            <div className="flex items-end justify-between mb-8 animate-in fade-in slide-in-from-left-4 duration-500">
+                <h1 className="text-3xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-zinc-500 tracking-tighter">
+                    {getGreeting()}
+                    <span className="block text-xl md:text-2xl text-zinc-400 font-medium mt-1 tracking-normal">
+                        Ready for some music, {user?.displayName || user?.username}?
+                    </span>
+                </h1>
+            </div>
 
-            {/* Featured Songs (Grid) */}
-            <Section title="Featured Songs">
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
-                    {songs.slice(0, 10).map((song) => (
-                        <SongCard key={song.id} song={song} />
-                    ))}
-                    {songs.length === 0 && (
-                        <div className="col-span-full text-center text-gray-400 py-4">
-                            No songs found.
-                        </div>
-                    )}
-                </div>
+            {/* Hero Section */}
+            {featuredItem && <FeaturedHero item={featuredItem} type={featuredType} />}
+
+            {/* Trending Songs (Horizontal) */}
+            <Section title="Trending Songs">
+                {songs.slice(0, 10).map((song) => (
+                    <div key={song.id} className="w-[180px] md:w-[220px] shrink-0 snap-start">
+                        <SongCard song={song} />
+                    </div>
+                ))}
             </Section>
 
-            {/* Trending Albums */}
-            <Section title="Trending Albums">
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
-                    {albums.slice(0, 6).map((album) => (
-                        <AlbumCard key={album.id} album={album} />
-                    ))}
-                    {albums.length === 0 && (
-                        <div className="col-span-full text-center text-gray-400 py-4">
-                            No albums found.
-                        </div>
-                    )}
-                </div>
+            {/* Top Albums (Horizontal) */}
+            <Section title="Top Albums">
+                {albums.slice(0, 10).map((album) => (
+                    <div key={album.id} className="w-[180px] md:w-[220px] shrink-0 snap-start">
+                        <AlbumCard album={album} />
+                    </div>
+                ))}
             </Section>
 
-            {/* Popular Playlists */}
-            <Section title="Popular Playlists">
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
-                    {playlists.slice(0, 6).map((playlist) => (
-                        <PlaylistCard key={playlist.id} playlist={playlist} />
-                    ))}
-                    {playlists.length === 0 && (
-                        <div className="col-span-full text-center text-gray-400 py-4">
-                            No playlists found.
-                        </div>
-                    )}
-                </div>
-            </Section>
+            {/* Popular Playlists (Grid - different layout for variety) */}
+            <GridSection title="Curated Playlists">
+                {playlists.slice(0, 12).map((playlist) => (
+                    <PlaylistCard key={playlist.id} playlist={playlist} />
+                ))}
+            </GridSection>
 
-            {/* Suggested Artists */}
-            <Section title="Suggested Artists">
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
-                    {artists.slice(0, 6).map((artist) => (
-                        <ArtistCard key={artist.id} artist={artist} />
-                    ))}
-                    {artists.length === 0 && (
-                        <div className="col-span-full text-center text-gray-400 py-4">
-                            No artists found.
-                        </div>
-                    )}
-                </div>
+            <Section title="Recommended Artists">
+                {artists.slice(0, 10).map((artist) => (
+                    <div key={artist.id} className="w-[160px] md:w-[200px] shrink-0 snap-start">
+                        <ArtistCard artist={artist} />
+                    </div>
+                ))}
             </Section>
         </div>
     );

@@ -7,7 +7,7 @@ const PlaylistCard = ({ playlist }) => {
 
     return (
         <div
-            className="group bg-[#181818] hover:bg-[#282828] transition-all duration-300 rounded-lg p-4 cursor-pointer"
+            className="group relative bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/5 transition-all duration-300 rounded-lg p-4 cursor-pointer"
             onClick={() => navigate(`/app/playlist/${playlist.id}`)}
         >
             <div className="relative aspect-square w-full mb-4 rounded-md overflow-hidden shadow-lg bg-[#333] flex items-center justify-center">

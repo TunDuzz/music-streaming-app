@@ -2,11 +2,9 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { artistsApi, playlistsApi, formatDuration } from '../../lib/api';
 import { usePlayer } from '../../contexts/PlayerContext';
-
-
-import { Loader2, Play, Pause, Clock, Disc, Music, BadgeCheck, CheckCircle2, PlusCircle, MoreHorizontal, Heart, Plus } from 'lucide-react';
+import { cn } from '../../lib/utils';
+import { Loader2, Play, Pause, BadgeCheck, MoreHorizontal, Heart, Plus, Disc3 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import AddToPlaylistDialog from '../../components/playlist/AddToPlaylistDialog';
 import {
     DropdownMenu,
@@ -75,14 +73,12 @@ const ArtistDetail = () => {
 
     // Helper to format large numbers
     const formatPlayCount = (count) => {
-        return new Intl.NumberFormat('vi-VN').format(count || 0);
+        return new Intl.NumberFormat('en-US').format(count || 0);
     };
 
-    // Callback when a song is added via dialog (optional optimization: update local state immediately)
     const handleDialogChange = (open) => {
         setIsDialogOpen(open);
         if (!open) {
-            // Refetch playlists to update checkmarks when dialog closes
             fetchUserPlaylists();
         }
     };
@@ -93,119 +89,123 @@ const ArtistDetail = () => {
     };
 
     return (
-        <div className="bg-gradient-to-b from-[#1E1E1E] to-[#121212] min-h-screen pb-32">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row items-end gap-6 p-8 bg-gradient-to-b from-gray-700/50 to-transparent">
-                <div className="w-52 h-52 bg-[#282828] shadow-2xl flex items-center justify-center rounded-full overflow-hidden group relative flex-shrink-0">
-                    {artist.avatarUrl ? (
-                        <img
-                            src={`${artist.avatarUrl}?t=${new Date().getTime()}`}
-                            alt={artist.name}
-                            className="w-full h-full object-cover rounded-full"
-                        />
-                    ) : (
-                        <Music className="w-20 h-20 text-gray-500" />
-                    )}
-                </div>
-                <div className="flex flex-col gap-2 w-full">
-                    <div className="flex items-center gap-2">
+        <div className="bg-gradient-to-b from-zinc-900 to-black min-h-screen pb-32">
+            {/* Header Hero */}
+            <div className="relative h-[400px] md:h-[500px] w-full overflow-hidden">
+                {/* Background Image with Overlay */}
+                <div
+                    className="absolute inset-0 bg-cover bg-center"
+                    style={{ backgroundImage: `url(${artist.avatarUrl || ''})`, filter: 'blur(20px) brightness(0.4)' }}
+                ></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-transparent to-transparent"></div>
+
+                {/* Content */}
+                <div className="absolute bottom-0 left-0 right-0 p-8 flex flex-col gap-4 z-10">
+                    <div className="flex items-center gap-2 mb-2">
                         {/* Verified Icon */}
-                        <BadgeCheck className="w-6 h-6 text-white fill-blue-500" />
-                        <span className="text-white text-sm font-bold tracking-wide">Verified Artist</span>
+                        <BadgeCheck className="w-6 h-6 text-blue-400 fill-blue-900" />
+                        <span className="text-white text-sm font-bold tracking-wide uppercase">Verified Artist</span>
                     </div>
-                    <h1 className="text-5xl md:text-8xl font-black text-white mb-4 tracking-tighter">
+
+                    <h1 className="text-6xl md:text-8xl lg:text-9xl font-black text-white tracking-tighter drop-shadow-2xl">
                         {artist.name}
                     </h1>
 
-                    <div className="flex items-center gap-6 text-sm text-gray-300 font-medium mt-4">
-                        <span className="text-white">{artist.followerCount?.toLocaleString() || 0} monthly listeners</span>
+                    <div className="text-base text-white/90 font-medium">
+                        {artist.followerCount?.toLocaleString() || 0} monthly listeners
                     </div>
                 </div>
             </div>
 
-            {/* Actions Bar */}
-            <div className="flex items-center gap-4 px-8 py-6">
+            {/* Actions & Play Button */}
+            <div className="flex items-center gap-4 px-8 py-6 bg-[#121212]/95 backdrop-blur-md z-20 border-b border-white/5 shadow-lg transition-all duration-300">
                 {popularSongs.length > 0 && (
                     <Button
                         size="icon"
-                        className="w-14 h-14 rounded-full bg-green-500 hover:bg-green-400 text-black shadow-lg"
-                        onClick={() => playSong(popularSongs[0])}
+                        className="w-14 h-14 rounded-full bg-green-500 hover:bg-green-400 text-black shadow-lg hover:scale-105 transition-all"
+                        onClick={() => playSong(popularSongs[0], popularSongs)}
                     >
                         {currentSong?.artists?.some(a => a.id === artist.id) && isPlaying ? (
-                            <Pause fill="currentColor" className="w-6 h-6" />
+                            <Pause fill="currentColor" className="w-7 h-7 ml-1" />
                         ) : (
-                            <Play fill="currentColor" className="w-6 h-6 ml-1" />
+                            <Play fill="currentColor" className="w-7 h-7 ml-1" />
                         )}
                     </Button>
                 )}
 
-                <Button variant="outline" className="text-white border-gray-400 hover:border-white hover:bg-transparent uppercase text-xs font-bold tracking-widest px-6 rounded-full">
+                <Button variant="outline" className="border-white/20 hover:border-white text-white hover:bg-white/10 rounded-full px-6 font-bold tracking-wider text-xs uppercase h-10">
                     Follow
+                </Button>
+
+                <Button size="icon" variant="ghost" className="text-zinc-400 hover:text-white hover:bg-white/5 rounded-full h-10 w-10">
+                    <MoreHorizontal className="w-6 h-6" />
                 </Button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 px-8">
+            <div className="px-8 mt-8 grid grid-cols-1 lg:grid-cols-3 gap-12">
                 {/* Popular Songs Column */}
-                <div className="lg:col-span-2">
+                <div className="lg:col-span-2 space-y-4">
                     <h2 className="text-2xl font-bold text-white mb-4">Popular</h2>
-                    <div className="space-y-1">
+                    <div className="space-y-0.5">
                         {popularSongs.map((song, index) => {
                             const isCurrentSong = currentSong?.id === song.id;
-                            const isAdded = addedSongIds.has(song.id);
 
                             return (
                                 <div
                                     key={song.id}
-                                    className="group grid grid-cols-[16px_4fr_2fr_minmax(50px,1fr)_40px] gap-4 px-4 py-2 rounded-md hover:bg-white/10 transition-colors cursor-pointer items-center text-sm text-gray-400 hover:text-white"
-                                    onClick={() => playSong(song)}
+                                    className={cn(
+                                        "group grid grid-cols-[16px_4fr_2fr_50px_40px] gap-4 px-4 py-3 rounded-md hover:bg-white/10 transition-colors cursor-pointer items-center text-sm",
+                                        isCurrentSong ? "bg-white/5" : "text-zinc-400"
+                                    )}
+                                    onClick={() => playSong(song, popularSongs)}
                                 >
                                     <div className="flex items-center justify-center">
                                         {isCurrentSong && isPlaying ? (
                                             <img src="https://open.spotifycdn.com/cdn/images/equaliser-animated-green.f93a2ef4.gif" className="w-3.5 h-3.5" alt="playing" />
                                         ) : (
-                                            <span className="group-hover:hidden">{index + 1}</span>
+                                            <span className={cn("group-hover:hidden font-mono", isCurrentSong && "text-green-500 font-bold")}>{index + 1}</span>
                                         )}
-                                        <Play className={`w-3 h-3 text-white hidden ${(!isCurrentSong || !isPlaying) ? 'group-hover:block' : ''}`} fill="currentColor" />
+                                        <Play className={cn("w-4 h-4 text-white hidden", (!isCurrentSong || !isPlaying) && "group-hover:block")} fill="currentColor" />
                                     </div>
 
                                     <div className="flex items-center gap-3 overflow-hidden">
                                         <img src={song.coverImageUrl} className="w-10 h-10 object-cover rounded shadow" alt="" />
-                                        <span className={`font-medium truncate text-base ${isCurrentSong ? 'text-green-500' : 'text-white'}`}>{song.title}</span>
+                                        <span className={cn("font-medium truncate text-base transition-colors", isCurrentSong ? "text-green-500" : "text-white")}>
+                                            {song.title}
+                                        </span>
                                     </div>
 
-                                    {/* Play Count */}
-                                    <div className="truncate group-hover:text-white transition-colors">
-                                        {formatPlayCount(song.playCount || 0)}
+                                    <div className="truncate text-xs font-mono group-hover:text-white transition-colors">
+                                        {formatPlayCount(song.playCount)} calls
                                     </div>
 
-                                    {/* Duration */}
-                                    <div className="flex items-center justify-end">
-                                        <span>{formatDuration(song.duration)}</span>
+                                    <div className="flex justify-end text-xs font-mono group-hover:text-white transition-colors">
+                                        {formatDuration(song.duration)}
                                     </div>
 
                                     {/* Actions */}
-                                    <div className="flex justify-end items-center opacity-0 group-hover:opacity-100 transition-opacity text-gray-400">
+                                    <div className="flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                         <div onClick={(e) => e.stopPropagation()}>
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button size="icon" variant="ghost" className="h-8 w-8 hover:text-white">
-                                                        <MoreHorizontal size={16} />
+                                                    <Button size="icon" variant="ghost" className="h-8 w-8 text-zinc-400 hover:text-white hover:bg-transparent">
+                                                        <MoreHorizontal className="w-4 h-4" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="bg-[#282828] border-none text-gray-200 z-50">
+                                                <DropdownMenuContent align="end" className="bg-[#282828] border-white/10 text-zinc-200 z-50">
                                                     <DropdownMenuItem
                                                         onClick={() => toggleLike(song.id)}
-                                                        className="hover:bg-[#3E3E3E] cursor-pointer"
+                                                        className="hover:bg-white/10 cursor-pointer focus:bg-white/10"
                                                     >
-                                                        <Heart className={`w-4 h-4 mr-2 ${likedSongIds.has(song.id) ? 'fill-green-500 text-green-500' : ''}`} />
-                                                        {likedSongIds.has(song.id) ? 'Xóa khỏi danh sách yêu thích' : 'Thêm vào danh sách yêu thích'}
+                                                        <Heart className={cn("w-4 h-4 mr-2", likedSongIds.has(song.id) ? "fill-green-500 text-green-500" : "")} />
+                                                        {likedSongIds.has(song.id) ? 'Remove from Liked' : 'Add to Liked'}
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem
                                                         onClick={() => handleAddToPlaylist(song)}
-                                                        className="hover:bg-[#3E3E3E] cursor-pointer"
+                                                        className="hover:bg-white/10 cursor-pointer focus:bg-white/10"
                                                     >
                                                         <Plus className="w-4 h-4 mr-2" />
-                                                        Thêm vào danh sách phát
+                                                        Add to Playlist
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
@@ -214,29 +214,42 @@ const ArtistDetail = () => {
                                 </div>
                             );
                         })}
-                        {popularSongs.length === 0 && <div className="text-gray-500 italic">No songs found.</div>}
                     </div>
+                    {popularSongs.length >= 5 && (
+                        <Button variant="ghost" className="text-zinc-400 hover:text-white text-xs font-bold uppercase tracking-widest mt-2 hover:bg-transparent pl-4">
+                            See All
+                        </Button>
+                    )}
                 </div>
 
-                {/* Artist Pick / About / Stats Column - Placeholder for now */}
+                {/* About / Bio (Right Column) */}
                 <div className="hidden lg:block">
                     <h2 className="text-2xl font-bold text-white mb-4">About</h2>
-                    {artist.bio ? (
-                        <div className="bg-[#282828] rounded-lg p-6 hover:bg-[#333] transition-colors cursor-pointer relative overflow-hidden h-[300px]">
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent pointer-events-none"></div>
-                            {artist.avatarUrl && <img src={artist.avatarUrl} className="absolute inset-0 w-full h-full object-cover opacity-50" alt="" />}
+                    <div className="bg-[#181818] rounded-xl overflow-hidden hover:scale-[1.02] transition-transform duration-300 cursor-pointer group shadow-xl">
+                        <div className="h-64 relative">
+                            {artist.avatarUrl ? (
+                                <img src={artist.avatarUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="" />
+                            ) : (
+                                <div className="w-full h-full bg-zinc-800 flex items-center justify-center"><Disc3 size={48} className="text-zinc-600" /></div>
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
                             <div className="absolute bottom-6 left-6 right-6">
-                                <p className="text-white line-clamp-3 font-medium">{artist.bio}</p>
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                        {artist.followerCount?.toLocaleString()} Followers
+                                    </div>
+                                </div>
+                                <p className="text-white line-clamp-3 font-medium leading-relaxed drop-shadow-md">
+                                    {artist.bio || "No biography available for this artist."}
+                                </p>
                             </div>
                         </div>
-                    ) : (
-                        <div className="text-gray-500">No biography available.</div>
-                    )}
+                    </div>
                 </div>
             </div>
 
-            {/* Discography */}
-            <div className="px-8 mt-12 space-y-12">
+            {/* Discography Section */}
+            <div className="px-8 mt-16 space-y-16">
                 {/* Albums */}
                 {albums.length > 0 && (
                     <section>
@@ -245,18 +258,23 @@ const ArtistDetail = () => {
                             {albums.map((album) => (
                                 <div
                                     key={album.id}
-                                    className="bg-[#181818] p-4 rounded-lg hover:bg-[#282828] transition-all cursor-pointer group"
+                                    className="bg-[#181818] p-4 rounded-xl hover:bg-[#282828] transition-all cursor-pointer group shadow-lg hover:shadow-2xl hover:-translate-y-1 duration-300"
                                     onClick={() => navigate(`/app/album/${album.id}`)}
                                 >
-                                    <div className="relative mb-4 aspect-square">
+                                    <div className="relative mb-4 aspect-square rounded-md overflow-hidden shadow-black/50 shadow-lg">
                                         <img
                                             src={album.coverImageUrl || 'https://placehold.co/200'}
                                             alt={album.title}
-                                            className="w-full h-full object-cover rounded-md shadow-lg group-hover:shadow-xl transition-shadow"
+                                            className="w-full h-full object-cover"
                                         />
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <Button size="icon" className="rounded-full w-12 h-12 bg-green-500 hover:bg-green-400 text-black shadow-xl translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                                                <Play fill="currentColor" className="ml-1" />
+                                            </Button>
+                                        </div>
                                     </div>
                                     <h3 className="text-base font-bold text-white truncate">{album.title}</h3>
-                                    <p className="text-sm text-gray-400 mt-1">
+                                    <p className="text-sm text-zinc-400 mt-1">
                                         {new Date(album.releaseDate).getFullYear()} • Album
                                     </p>
                                 </div>
@@ -265,26 +283,31 @@ const ArtistDetail = () => {
                     </section>
                 )}
 
-                {/* Singles and EPs */}
+                {/* Singles */}
                 {singles.length > 0 && (
                     <section>
-                        <h2 className="text-2xl font-bold text-white mb-6">Singles and EPs</h2>
+                        <h2 className="text-2xl font-bold text-white mb-6">Singles & EPs</h2>
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
                             {singles.map((album) => (
                                 <div
                                     key={album.id}
-                                    className="bg-[#181818] p-4 rounded-lg hover:bg-[#282828] transition-all cursor-pointer group"
+                                    className="bg-[#181818] p-4 rounded-xl hover:bg-[#282828] transition-all cursor-pointer group shadow-lg hover:shadow-2xl hover:-translate-y-1 duration-300"
                                     onClick={() => navigate(`/app/album/${album.id}`)}
                                 >
-                                    <div className="relative mb-4 aspect-square">
+                                    <div className="relative mb-4 aspect-square rounded-md overflow-hidden shadow-black/50 shadow-lg">
                                         <img
                                             src={album.coverImageUrl || 'https://placehold.co/200'}
                                             alt={album.title}
-                                            className="w-full h-full object-cover rounded-md shadow-lg group-hover:shadow-xl transition-shadow"
+                                            className="w-full h-full object-cover"
                                         />
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <Button size="icon" className="rounded-full w-12 h-12 bg-green-500 hover:bg-green-400 text-black shadow-xl translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                                                <Play fill="currentColor" className="ml-1" />
+                                            </Button>
+                                        </div>
                                     </div>
                                     <h3 className="text-base font-bold text-white truncate">{album.title}</h3>
-                                    <p className="text-sm text-gray-400 mt-1">
+                                    <p className="text-sm text-zinc-400 mt-1">
                                         {new Date(album.releaseDate).getFullYear()} • Single
                                     </p>
                                 </div>

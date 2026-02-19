@@ -15,6 +15,7 @@ import AdminLayout from './components/layout/AdminLayout';
 import Landing from './pages/auth/Landing';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
+import { Toaster } from './components/ui/sonner';
 
 // Music pages
 import Home from './pages/music/Home';
@@ -84,6 +85,7 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
+      <Toaster />
     </AuthProvider>
   );
 }

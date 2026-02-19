@@ -12,7 +12,7 @@ import {
 } from "../ui/dropdown-menu";
 import AddToPlaylistDialog from '../playlist/AddToPlaylistDialog';
 
-const SongCard = ({ song }) => {
+const SongCard = ({ song, collection }) => {
     const { playSong, currentSong, isPlaying } = usePlayer();
     const navigate = useNavigate();
 
@@ -27,8 +27,8 @@ const SongCard = ({ song }) => {
     return (
         <>
             <div
-                className="group relative bg-[#181818] hover:bg-[#282828] transition-all duration-300 rounded-lg p-4 cursor-pointer"
-                onClick={() => playSong(song)}
+                className="group relative bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/5 transition-all duration-300 rounded-lg p-4 cursor-pointer"
+                onClick={() => playSong(song, collection)}
             >
                 <div className="relative aspect-square w-full mb-4 rounded-md overflow-hidden shadow-lg">
                     <img
@@ -45,7 +45,7 @@ const SongCard = ({ song }) => {
                             className="rounded-full bg-green-500 hover:bg-green-400 text-black h-12 w-12 shadow-lg"
                             onClick={(e) => {
                                 e.stopPropagation();
-                                playSong(song);
+                                playSong(song, collection);
                             }}
                         >
                             {isCurrent && isPlaying ? (

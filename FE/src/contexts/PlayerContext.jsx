@@ -12,6 +12,9 @@ export const PlayerProvider = ({ children }) => {
   const [currentSong, setCurrentSong] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [queue, setQueue] = useState([]);
+  const [originalQueue, setOriginalQueue] = useState([]); // Backup for shuffle
+  const [isShuffle, setIsShuffle] = useState(false);
+  const [repeatMode, setRepeatMode] = useState('off'); // 'off', 'all', 'one'
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
@@ -53,54 +56,51 @@ export const PlayerProvider = ({ children }) => {
       if (savedQueue) setQueue(JSON.parse(savedQueue));
       else setQueue([]);
 
+      // Load Shuffle/Repeat State
+      const savedShuffle = localStorage.getItem(`playerShuffle_${userId}`);
+      if (savedShuffle) setIsShuffle(JSON.parse(savedShuffle));
+
+      const savedRepeat = localStorage.getItem(`playerRepeat_${userId}`);
+      if (savedRepeat) setRepeatMode(savedRepeat);
+
+      const savedOriginalQueue = localStorage.getItem(`playerOriginalQueue_${userId}`);
+      if (savedOriginalQueue) setOriginalQueue(JSON.parse(savedOriginalQueue));
+
+
       setIsStateLoaded(true);
     };
 
     loadState();
-    // To trigger re-load on login/logout, we need a trigger.
-    // This dependency array is a placeholder. In a real app, you'd likely
-    // use a user object from an AuthContext or listen to storage events.
-    // For now, we'll use a simple indicator that might change on login/logout.
-    // A more robust solution would involve a custom hook for localStorage or AuthContext.
-  }, [localStorage.getItem('token')]); // This won't trigger re-render on its own if token changes without a component re-mount.
+  }, [localStorage.getItem('token')]);
 
-  // Save state to localStorage whenever it changes, but only after initial load
+  // Save state to localStorage
   useEffect(() => {
     if (!isStateLoaded) return;
     const userId = getUserId();
-    if (currentSong) {
-      localStorage.setItem(`currentSong_${userId}`, JSON.stringify(currentSong));
-    } else {
-      localStorage.removeItem(`currentSong_${userId}`);
-    }
-  }, [currentSong, isStateLoaded]);
 
-  useEffect(() => {
-    if (!isStateLoaded) return;
-    const userId = getUserId();
+    if (currentSong) localStorage.setItem(`currentSong_${userId}`, JSON.stringify(currentSong));
+    else localStorage.removeItem(`currentSong_${userId}`);
+
     localStorage.setItem(`playerQueue_${userId}`, JSON.stringify(queue));
-  }, [queue, isStateLoaded]);
-
-  useEffect(() => {
-    if (!isStateLoaded) return;
-    const userId = getUserId();
     localStorage.setItem(`playerVolume_${userId}`, volume.toString());
-  }, [volume, isStateLoaded]);
+    localStorage.setItem(`playerShuffle_${userId}`, JSON.stringify(isShuffle));
+    localStorage.setItem(`playerRepeat_${userId}`, repeatMode);
+    localStorage.setItem(`playerOriginalQueue_${userId}`, JSON.stringify(originalQueue));
+
+  }, [currentSong, queue, volume, isShuffle, repeatMode, originalQueue, isStateLoaded]);
 
   // Initial Audio Setup on Mount (restore source)
   useEffect(() => {
     const audio = audioRef.current;
     audio.volume = volume;
 
-    // This effect now primarily handles volume changes and ensures src is set
-    // if currentSong changes *after* initial load, or if src was cleared.
-    if (currentSong && !audio.src) { // Only set src if it's not already set
+    if (currentSong && !audio.src) {
       const src = currentSong.audioFileUrl || currentSong.songUrl || currentSong.fileUrl;
       if (src) {
         audio.src = src;
       }
     }
-  }, [currentSong, volume]); // Run when currentSong is restored or volume changes initially
+  }, [currentSong, volume]);
 
   // Fetch liked songs on mount/auth change
   useEffect(() => {
@@ -127,7 +127,16 @@ export const PlayerProvider = ({ children }) => {
 
     const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
     const handleLoadedMetadata = () => setDuration(audio.duration);
-    const handleEnded = () => playNext();
+
+    // Handle song end based on repeat mode
+    const handleEnded = () => {
+      if (repeatMode === 'one') {
+        audio.currentTime = 0;
+        audio.play();
+      } else {
+        playNext(true); // true indicates auto-advance
+      }
+    };
 
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
@@ -138,9 +147,45 @@ export const PlayerProvider = ({ children }) => {
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('ended', handleEnded);
     };
-  }, [queue]); // Re-bind if queue changes (though logic uses state)
+  }, [queue, repeatMode]); // Re-bind if queue or repeatMode changes
 
-  const playSong = (song) => {
+  // Helper to shuffle array
+  const shuffleArray = (array) => {
+    let currentIndex = array.length, randomIndex;
+    // While there remain elements to shuffle.
+    while (currentIndex !== 0) {
+      // Pick a remaining element.
+      randomIndex = Math.floor(Math.random() * currentIndex);
+      currentIndex--;
+      // And swap it with the current element.
+      [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+    }
+    return array;
+  };
+
+  const playSong = (song, collection = null) => {
+    let newQueue = queue;
+
+    // Context-Aware Queue Logic
+    if (collection && Array.isArray(collection) && collection.length > 0) {
+      setOriginalQueue(collection);
+      if (isShuffle) {
+        // If shuffle is on, shuffle the new collection but keep target song first? 
+        // Or just shuffle everything. Common UX: Play song, shuffle rest.
+        // Simplified: Shuffle entire collection, find song, put to front.
+        const shuffled = shuffleArray([...collection]);
+        const index = shuffled.findIndex(s => s.id === song.id);
+        if (index > -1) {
+          shuffled.splice(index, 1);
+          shuffled.unshift(song);
+        }
+        newQueue = shuffled;
+      } else {
+        newQueue = collection;
+      }
+      setQueue(newQueue);
+    }
+
     if (currentSong?.id === song.id) {
       if (isPlaying) {
         audioRef.current.pause();
@@ -169,7 +214,6 @@ export const PlayerProvider = ({ children }) => {
 
   const resumeSong = () => {
     if (currentSong) {
-      // Ensure src is set if it was lost (e.g. technically covered by effect but explicit check is safer)
       if (!audioRef.current.src) {
         const src = currentSong.audioFileUrl || currentSong.songUrl || currentSong.fileUrl;
         if (src) audioRef.current.src = src;
@@ -179,9 +223,26 @@ export const PlayerProvider = ({ children }) => {
     }
   };
 
-  const playNext = () => {
+  const playNext = (autoAdvance = false) => {
     if (queue.length > 0) {
-      const nextIndex = queue.findIndex(s => s.id === currentSong?.id) + 1;
+      const currentIndex = queue.findIndex(s => s.id === currentSong?.id);
+      let nextIndex = currentIndex + 1;
+
+      // Wrap around logic for Repeat All
+      if (nextIndex >= queue.length) {
+        if (repeatMode === 'all' || autoAdvance) {
+          // If Repeat All is ON, wrap to 0.
+          // If Auto Advance (song ended) and Repeat All is ON, wrap to 0.
+          // If Auto Advance and Repeat Off, stop (handled by check below).
+          if (repeatMode === 'all') nextIndex = 0;
+          else if (repeatMode === 'off' && autoAdvance) {
+            // Stop playback
+            setIsPlaying(false);
+            return;
+          }
+        }
+      }
+
       if (nextIndex < queue.length) {
         playSong(queue[nextIndex]);
       }
@@ -189,8 +250,25 @@ export const PlayerProvider = ({ children }) => {
   };
 
   const playPrevious = () => {
+    // If played > 3 seconds, restart song
+    if (audioRef.current.currentTime > 3) {
+      audioRef.current.currentTime = 0;
+      return;
+    }
+
     if (queue.length > 0) {
-      const prevIndex = queue.findIndex(s => s.id === currentSong?.id) - 1;
+      const currentIndex = queue.findIndex(s => s.id === currentSong?.id);
+      let prevIndex = currentIndex - 1;
+
+      if (prevIndex < 0) {
+        // Wrap to end if Repeat All ?? Or just stay at start?
+        // Usually previous at start goes to last song if generic player logic, 
+        // but often it just stays at 0 if repeat off. 
+        // Let's implement wrap if Repeat All.
+        if (repeatMode === 'all') prevIndex = queue.length - 1;
+        else prevIndex = 0; // Or stop? Usually just restart first song.
+      }
+
       if (prevIndex >= 0) {
         playSong(queue[prevIndex]);
       }
@@ -199,10 +277,53 @@ export const PlayerProvider = ({ children }) => {
 
   const addToQueue = (song) => {
     setQueue(prev => [...prev, song]);
+    // Also update original queue if not shuffling? 
+    // Usually manual add to queue appends to current queue.
+    // If shuffle is on, we might want to add it to originalQueue too.
+    setOriginalQueue(prev => [...prev, song]);
   };
 
   const setQueueList = (songs) => {
     setQueue(songs);
+    setOriginalQueue(songs);
+    setIsShuffle(false); // Reset shuffle when explicitly setting queue list? Or maintain? 
+    // Usually setting a new list implies a reset.
+  };
+
+  const toggleShuffle = () => {
+    const newShuffleState = !isShuffle;
+    setIsShuffle(newShuffleState);
+
+    if (newShuffleState) {
+      // Turn ON Shuffle
+      if (queue.length > 0) {
+        const shuffled = shuffleArray([...queue]);
+        // Keep current song playing
+        if (currentSong) {
+          const idx = shuffled.findIndex(s => s.id === currentSong.id);
+          if (idx > -1) {
+            shuffled.splice(idx, 1);
+            shuffled.unshift(currentSong);
+          }
+        }
+        setQueue(shuffled);
+      }
+    } else {
+      // Turn OFF Shuffle -> Restore Original
+      // But we want to keep current song playing.
+      // Restoring original queue might jump context if current song is far down.
+      // But it is the expected behavior to restore the playlist order.
+      if (originalQueue.length > 0) {
+        setQueue(originalQueue);
+      }
+    }
+  };
+
+  const toggleRepeat = () => {
+    // off -> all -> one -> off
+    if (repeatMode === 'off') setRepeatMode('all');
+    else if (repeatMode === 'all') setRepeatMode('one');
+    else setRepeatMode('off');
   };
 
   const seek = (time) => {
@@ -239,6 +360,8 @@ export const PlayerProvider = ({ children }) => {
     currentTime,
     duration,
     volume,
+    isShuffle,
+    repeatMode,
     playSong,
     pauseSong,
     resumeSong,
@@ -246,6 +369,8 @@ export const PlayerProvider = ({ children }) => {
     playPrevious,
     addToQueue,
     setQueueList,
+    toggleShuffle,
+    toggleRepeat,
     seek,
     updateVolume,
     likedSongIds,

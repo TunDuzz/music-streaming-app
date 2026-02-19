@@ -21,7 +21,11 @@ const Player = () => {
         formattedTime,
         formattedDuration,
         progress,
-        volume
+        volume,
+        isShuffle,
+        toggleShuffle,
+        repeatMode,
+        toggleRepeat
     } = useAudioPlayer();
 
     const [isDragging, setIsDragging] = useState(false);
@@ -88,7 +92,10 @@ const Player = () => {
             {/* Center: Controls */}
             <div className="flex flex-col items-center gap-2 w-[40%] max-w-xl">
                 <div className="flex items-center gap-6">
-                    <button className="text-gray-400 hover:text-white transition-colors">
+                    <button
+                        className={cn("text-gray-400 hover:text-white transition-colors", isShuffle && "text-green-500 hover:text-green-400")}
+                        onClick={toggleShuffle}
+                    >
                         <Shuffle size={18} />
                     </button>
                     <button
@@ -109,12 +116,18 @@ const Player = () => {
                     </button>
                     <button
                         className="text-gray-400 hover:text-white transition-colors"
-                        onClick={playNext}
+                        onClick={() => playNext()}
                     >
                         <SkipForward size={24} fill="currentColor" />
                     </button>
-                    <button className="text-gray-400 hover:text-white transition-colors">
+                    <button
+                        className={cn("text-gray-400 hover:text-white transition-colors relative", repeatMode !== 'off' && "text-green-500 hover:text-green-400")}
+                        onClick={toggleRepeat}
+                    >
                         <Repeat size={18} />
+                        {repeatMode === 'one' && (
+                            <span className="absolute -top-1 -right-1.5 text-[8px] font-bold bg-black px-0.5 rounded-full border border-green-500">1</span>
+                        )}
                     </button>
                 </div>
 
